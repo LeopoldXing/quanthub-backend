@@ -12,7 +12,7 @@ class QuanthubUser extends Model
     protected $table = 'quanthub_users';
 
     protected $fillable = [
-        'username', 'password', 'email', 'phone_number', 'role', 'created_by', 'updated_by'
+        'username', 'auth0Id', 'password', 'email', 'phone_number', 'role', 'created_by', 'updated_by'
     ];
 
     public function articles() {

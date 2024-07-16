@@ -7,18 +7,19 @@ use
 -- quanthub.quanthub_users definition
 CREATE TABLE `quanthub_users`
 (
-    `id`           bigint                                                        NOT NULL AUTO_INCREMENT,
-    `username`     varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-    `password`     varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-    `email`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `phone_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `role`         varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `created_at`   datetime                                                      DEFAULT NULL,
-    `created_by`   varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_at`   datetime                                                      DEFAULT NULL,
-    `updated_by`   varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `id`           bigint unsigned NOT NULL AUTO_INCREMENT,
+    `auth0Id`      varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `username`     varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `password`     varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `email`        varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `phone_number` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `role`         varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `created_by`   varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `updated_by`   varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `created_at`   timestamp NULL DEFAULT NULL,
+    `updated_at`   timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- quanthub.categories definition
 CREATE TABLE `categories`
