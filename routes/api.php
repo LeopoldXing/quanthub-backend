@@ -8,6 +8,7 @@ Route::post('/my/user', [UserController::class, 'createMyUser']);
 Route::put('/profile', [UserController::class, 'updateProfile']);
 Route::get('/profile', [UserController::class, 'getUserProfile']);
 
-Route::post('/article/publish', [ArticleController::class, 'createArticle']);
+Route::post('/article/publish', [ArticleController::class, 'publishArticle']);
 Route::put('/article/update', [ArticleController::class, 'updateArticle']);
 Route::get('/article/{id}', [ArticleController::class, 'getArticle']);
+Route::post('/article/draft', [ArticleController::class, 'createDraft']);
