@@ -14,6 +14,23 @@ use Illuminate\Support\Facades\Log;
 
 class ArticleService
 {
+    public function search($condition) {
+        try {
+            $res = Article::all();
+            $overviewList = $res->map(function ($item) {
+                $currentArticle = $this->getArticleById($item->id);
+                $currentArticle['commentsCount'] = $currentArticle['comments']->count();
+                $currentArticle['description'] = $currentArticle['contentHtml'];
+                return $currentArticle;
+            });
+            return $overviewList;
+        } catch (\Exception $exception) {
+            Log::error($exception->getMessage());
+            Log::error('Failed to search', ['error' => $exception->getMessage()]);
+            return ['response' => ['error' => 'Failed to search', 'message' => $exception->getMessage()], 'status' => 500];
+        }
+    }
+
     public function createArticle($data) {
         DB::beginTransaction();
 

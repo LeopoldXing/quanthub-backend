@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\ArticleService;
+use App\services\ArticleService;
 use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\Category;
@@ -17,6 +17,23 @@ class ArticleController extends Controller
 
     public function __construct(ArticleService $articleService) {
         $this->articleService = $articleService;
+    }
+
+    public function searchArticle(Request $request) {
+        // 验证请求数据
+        $validated = $request->validate([
+            'keyword' => 'nullable|string|max:255',
+            'categoryList' => 'nullable|array',
+            'categoryList.*' => 'string|max:100',
+            'tagList' => 'nullable|array',
+            'tagList.*' => 'string|max:100',
+            'sortStrategy' => 'nullable|in:publish_date,update_date,recommended',
+            'sortDirection' => 'nullable|in:desc,asc,none',
+            'contentType' => 'required|in:article,announcement'
+        ]);
+
+        $res = $this->articleService->search($validated);
+        return response()->json($res, 200);
     }
 
     public function publishArticle(Request $request) {
