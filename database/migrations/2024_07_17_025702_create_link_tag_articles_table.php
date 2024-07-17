@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateLinkTagArticleTable extends Migration
+class CreateLinkTagArticlesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -12,7 +12,7 @@ class CreateLinkTagArticleTable extends Migration
      * @return void
      */
     public function up() {
-        Schema::create('link_tag_article', function (Blueprint $table) {
+        Schema::create('link_tag_articles', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('article_id');
             $table->unsignedBigInteger('tag_id');
@@ -31,6 +31,6 @@ class CreateLinkTagArticleTable extends Migration
      * @return void
      */
     public function down() {
-        Schema::dropIfExists('link_tag_article');
+        Schema::dropIfExists('link_tag_articles');
     }
 }

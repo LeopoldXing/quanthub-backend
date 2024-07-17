@@ -14,10 +14,14 @@ class Article extends Model
     ];
 
     public function author() {
-        return $this->belongsTo(QuanthubUser::class);
+        return $this->belongsTo(QuanthubUser::class, 'author_id');
     }
 
     public function category() {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function tags() {
+        return $this->belongsToMany(Tag::class, 'link_tag_articles', 'article_id', 'tag_id');
     }
 }

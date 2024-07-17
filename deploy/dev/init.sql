@@ -14,7 +14,7 @@ CREATE TABLE `quanthub_users`
     `email`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `phone_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `role`         varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `avatarLink`   varchar(255) COLLATE utf8mb4_general_ci                       DEFAULT NULL,
+    `avatarLink`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_by`   varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `updated_by`   varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_at`   timestamp NULL DEFAULT NULL,
@@ -27,9 +27,9 @@ CREATE TABLE `quanthub_users`
 CREATE TABLE `categories`
 (
     `id`         bigint unsigned NOT NULL AUTO_INCREMENT,
-    `name`       varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `created_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `name`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `created_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `updated_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
@@ -40,17 +40,17 @@ CREATE TABLE `articles`
 (
     `id`               bigint unsigned NOT NULL AUTO_INCREMENT,
     `author_id`        bigint unsigned NOT NULL,
-    `title`            varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `sub_title`        varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `content`          text COLLATE utf8mb4_general_ci,
+    `title`            varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `sub_title`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `content`          text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
     `category_id`      bigint unsigned DEFAULT NULL,
-    `rate`             decimal(3, 1)                           DEFAULT NULL,
-    `status`           varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `cover_image_link` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `publish_date`     date                                    DEFAULT NULL,
-    `attachment_link`  varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `created_by`       varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by`       varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `rate`             decimal(3, 1)                                                 DEFAULT NULL,
+    `status`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `cover_image_link` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `publish_date`     date                                                          DEFAULT NULL,
+    `attachment_link`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `created_by`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `updated_by`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_at`       timestamp NULL DEFAULT NULL,
     `updated_at`       timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
@@ -64,13 +64,13 @@ CREATE TABLE `articles`
 CREATE TABLE `comments`
 (
     `id`               bigint unsigned NOT NULL AUTO_INCREMENT,
-    `content`          text COLLATE utf8mb4_general_ci,
+    `content`          text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
     `user_id`          bigint unsigned DEFAULT NULL,
-    `publish_datetime` datetime                                DEFAULT NULL,
+    `publish_datetime` datetime                                                      DEFAULT NULL,
     `article_id`       bigint unsigned DEFAULT NULL,
-    `status`           varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-    `created_by`       varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by`       varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `status`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `created_by`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `updated_by`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_at`       timestamp NULL DEFAULT NULL,
     `updated_at`       timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
@@ -84,22 +84,22 @@ CREATE TABLE `comments`
 CREATE TABLE `tags`
 (
     `id`         bigint unsigned NOT NULL AUTO_INCREMENT,
-    `name`       varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-    `created_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `name`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `created_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `updated_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- quanthub.link_tag_article definition
-CREATE TABLE `link_tag_article`
+-- quanthub.link_tag_articles definition
+CREATE TABLE `link_tag_articles`
 (
     `id`         bigint unsigned NOT NULL AUTO_INCREMENT,
     `article_id` bigint unsigned NOT NULL,
     `tag_id`     bigint unsigned NOT NULL,
-    `created_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `created_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `updated_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
@@ -115,8 +115,8 @@ CREATE TABLE `likes`
     `id`         bigint unsigned NOT NULL AUTO_INCREMENT,
     `user_id`    bigint unsigned NOT NULL,
     `article_id` bigint unsigned NOT NULL,
-    `created_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `created_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `updated_by` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT NULL,
     `updated_at` timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),

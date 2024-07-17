@@ -35,7 +35,7 @@ class ArticleController extends Controller
             if (!empty($validated['category'])) {
                 $category = Category::firstOrCreate(
                     ['name' => $validated['category']],
-                    ['created_by' => auth()->id(), 'updated_by' => auth()->id()]
+                    ['created_by' => $validated['authorId'], 'updated_by' => $validated['authorId']]
                 );
                 $categoryId = $category->id;
                 $categoryData = ['id' => $category->id, 'name' => $category->name];
@@ -53,8 +53,8 @@ class ArticleController extends Controller
                 'publish_date' => now(),
                 'cover_image_link' => $validated['coverImageLink'] ?? null,
                 'attachment_link' => $validated['attachmentLink'] ?? null,
-                'created_by' => auth()->id(),
-                'updated_by' => auth()->id()
+                'created_by' => $validated['authorId'],
+                'updated_by' => $validated['authorId']
             ]);
 
             // 处理标签
@@ -64,7 +64,7 @@ class ArticleController extends Controller
                 foreach ($validated['tags'] as $tagName) {
                     $tag = Tag::firstOrCreate(
                         ['name' => $tagName],
-                        ['created_by' => auth()->id(), 'updated_by' => auth()->id()]
+                        ['created_by' => $validated['authorId'], 'updated_by' => $validated['authorId']]
                     );
                     $tagIds[] = $tag->id;
                     $tagsData[] = ['id' => $tag->id, 'name' => $tag->name];
@@ -75,8 +75,8 @@ class ArticleController extends Controller
                     LinkTagArticle::create([
                         'article_id' => $article->id,
                         'tag_id' => $tagId,
-                        'created_by' => auth()->id(),
-                        'updated_by' => auth()->id()
+                        'created_by' => $validated['authorId'],
+                        'updated_by' => $validated['authorId']
                     ]);
                 }
             }

@@ -9,6 +9,8 @@ class LinkTagArticle extends Model
 {
     use HasFactory;
 
+    protected $table = 'link_tag_articles';
+
     protected $fillable = [
         'article_id', 'tag_id', 'created_by', 'updated_by'
     ];
