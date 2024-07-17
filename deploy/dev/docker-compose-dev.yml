@@ -1,9 +1,9 @@
 services:
-  db:
+  mysql-db:
     container_name: mysql-quanthub-dev
     image: mysql:8.2.0
     networks:
-      - quanthub-default
+      - quanthub-dev-network
     volumes:
       - quanthub-mysql-data:/var/lib/mysql
       - quanthub-mysql-conf:/etc/mysql
@@ -17,10 +17,60 @@ services:
       timeout: 10s
       retries: 3
 
+  # ELK Stack
+  es01:
+    container_name: elasticsearch01-quanthub-dev
+    image: elasticsearch:8.14.1
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      # enable SSL
+      # - xpack.security.enabled=true
+      # - xpack.security.transport.ssl.enabled=true
+      # - xpack.security.transport.ssl.verification_mode=certificate
+      # - xpack.security.transport.ssl.key=/path/to/your/certificate.key
+      # - xpack.security.transport.ssl.certificate=/path/to/your/certificate.crt
+      # - xpack.security.transport.ssl.certificate_authorities=/path/to/your/ca.crt
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    # volumes:
+    #   - es01-log-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - quanthub-dev-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -I http://localhost:9200 || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  kibana:
+    container_name: kibana-quanthub-dev
+    image: kibana:8.14.1
+    ports:
+      - "5601:5601"
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -I http://localhost:5601 || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      es01:
+        condition: service_healthy
+    networks:
+      - quanthub-dev-network
+
+
 networks:
-  quanthub-default:
+  quanthub-dev-network:
     driver: bridge
-    name: quanthub-default
+    name: quanthub-dev-network
 
 volumes:
   quanthub-mysql-data:

@@ -1,0 +1,9 @@
+server.host: "0.0.0.0"
+server.port: 5601
+elasticsearch.hosts: [ "http://elasticsearch01-quanthub-dev:9200" ]
+monitoring.ui.container.elasticsearch.enabled: true
+# 以下部分暂时注释掉
+# logging.dest: stdout
+# logging.silent: false
+# logging.quiet: false
+# logging.verbose: false
