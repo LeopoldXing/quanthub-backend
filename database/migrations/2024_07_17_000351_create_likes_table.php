@@ -6,13 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateLikesTable extends Migration
 {
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
     public function up() {
         Schema::create('likes', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('article_id');
-            $table->string('created_by', 100)->nullable();
-            $table->string('updated_by', 100)->nullable();
+            $table->string('created_by', 100)->collation('utf8mb4_general_ci')->nullable();
+            $table->string('updated_by', 100)->collation('utf8mb4_general_ci')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('quanthub_users')->onDelete('cascade');
@@ -20,6 +25,11 @@ class CreateLikesTable extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
     public function down() {
         Schema::dropIfExists('likes');
     }

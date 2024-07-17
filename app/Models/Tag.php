@@ -12,8 +12,4 @@ class Tag extends Model
     protected $fillable = [
         'name', 'created_by', 'updated_by'
     ];
-
-    public function articles() {
-        return $this->belongsToMany(Article::class, 'link_tag_article', 'tag_id', 'article_id');
-    }
 }

@@ -12,8 +12,4 @@ class Category extends Model
     protected $fillable = [
         'name', 'created_by', 'updated_by'
     ];
-
-    public function articles() {
-        return $this->belongsToMany(Article::class, 'link_category_article', 'category_id', 'article_id');
-    }
 }

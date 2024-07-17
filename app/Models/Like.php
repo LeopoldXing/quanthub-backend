@@ -14,10 +14,10 @@ class Like extends Model
     ];
 
     public function user() {
-        return $this->belongsTo(QuanthubUser::class, 'user_id');
+        return $this->belongsTo(QuanthubUser::class);
     }
 
     public function article() {
-        return $this->belongsTo(Article::class, 'article_id');
+        return $this->belongsTo(Article::class);
     }
 }
