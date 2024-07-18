@@ -14,7 +14,15 @@ class ElasticsearchService
         $this->client = ClientBuilder::create()->setHosts([$hosts])->build();
     }
 
-    public function search($params) {
+    /**
+     * search article according to conditions
+     *
+     * @param $params
+     * @return array
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     */
+    public function conditionalSearch($params) {
         $query = [
             'bool' => [
                 'must' => [],
@@ -84,12 +92,39 @@ class ElasticsearchService
     }
 
     /**
-     * Indexes an article in Elasticsearch.
+     * construct search param of sorting
+     *
+     * @param $params
+     * @return array|array[]
      */
-    public function indexArticle($articleData) {
-        Log::info("Indexing article with ID: {$articleData['id']}");
-        Log::info("Author data: " . json_encode($articleData['author']));
-        return $this->client->index([
+    private function buildSortParams($params) {
+        $sort = [];
+        if (!empty($params['sortStrategy']) && $params['sortDirection'] !== 'none') {
+            $direction = $params['sortDirection'] ?? 'desc'; // Default to descending
+            switch ($params['sortStrategy']) {
+                case 'publish_date':
+                    $sort = ['publish_date' => ['order' => $direction]];
+                    break;
+                case 'update_date':
+                    $sort = ['updated_at' => ['order' => $direction]];
+                    break;
+                case 'recommended':
+                    // 'recommended' is the sorting mode of score
+                    $sort = ['recommendation_score' => ['order' => $direction]];
+                    break;
+            }
+        }
+        return $sort;
+    }
+
+    /**
+     * construct the param for articles creation
+     *
+     * @param $articleData
+     * @return array
+     */
+    private function constructParamsForCreateArticles($articleData) {
+        return [
             'index' => 'quanthub-articles',
             'id' => $articleData['id'],
             'body' => [
@@ -107,32 +142,94 @@ class ElasticsearchService
                 'created_by' => $articleData['created_by'],
                 'updated_by' => $articleData['updated_by']
             ]
-        ]);
-    }
-
-
-    private function buildSortParams($params) {
-        $sort = [];
-        if (!empty($params['sortStrategy']) && $params['sortDirection'] !== 'none') {
-            $direction = $params['sortDirection'] ?? 'desc'; // Default to descending
-            switch ($params['sortStrategy']) {
-                case 'publish_date':
-                    $sort = ['publish_date' => ['order' => $direction]];
-                    break;
-                case 'update_date':
-                    $sort = ['updated_at' => ['order' => $direction]];
-                    break;
-                case 'recommended':
-                    // 'recommended' is a score or similar
-                    $sort = ['recommendation_score' => ['order' => $direction]];
-                    break;
-            }
-        }
-        return $sort;
+        ];
     }
 
     /**
-     * Creates an index with mappings tailored for the 'articles' index.
+     * construct the param for articles creation
+     *
+     * @param $articleData
+     * @return array
+     */
+    private function constructParamsForUpdateArticles($articleData) {
+        return [
+            'index' => 'quanthub-articles',
+            'id' => $articleData['id'],
+            'body' => [
+                'doc' => [
+                    'author' => $articleData['author'],
+                    'title' => $articleData['title'],
+                    'sub_title' => $articleData['sub_title'],
+                    'content' => $articleData['content'],
+                    'type' => $articleData['type'],
+                    'status' => $articleData['status'],
+                    'category' => $articleData['category'],
+                    'tags' => $articleData['tags'],
+                    'publish_date' => $articleData['publish_date'],
+                    'cover_image_link' => $articleData['cover_image_link'],
+                    'attachment_link' => $articleData['attachment_link'],
+                    'created_by' => $articleData['created_by'],
+                    'updated_by' => $articleData['updated_by']
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * create new document in "quanthub-articles" index
+     *
+     * @param $articleData
+     * @return \Elastic\Elasticsearch\Response\Elasticsearch|\Http\Promise\Promise
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     */
+    public function createArticleDoc($articleData) {
+        Log::info("Indexing article with ID: {$articleData['id']}");
+        Log::info("Author data: " . json_encode($articleData['author']));
+        return $this->client->index($this->constructParamsForCreateArticles($articleData));
+    }
+
+    /**
+     * update existing document in "quanthub-articles" index
+     *
+     * @param $articleData
+     * @return \Elastic\Elasticsearch\Response\Elasticsearch|\Http\Promise\Promise
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     */
+    public function updateArticleDoc($articleData) {
+        return $this->client->update($this->constructParamsForUpdateArticles($articleData));
+    }
+
+    /**
+     * delete document in "quanthub-articles" index
+     *
+     * @param $index
+     * @param $id
+     * @return array|\Elastic\Elasticsearch\Response\Elasticsearch|\Http\Promise\Promise
+     */
+    public function deleteArticleById($index, $id) {
+        try {
+            $response = $this->client->delete([
+                'index' => $index,
+                'id' => $id
+            ]);
+            return $response;  // You might want to return a more user-friendly message or result
+        } catch (\Exception $e) {
+            // Handle other possible exceptions
+            return ['error' => 'Error deleting document', 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * create mapping for index "quanthub-articles"
+     *
+     * @return void
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
      */
     public function createArticleIndex() {
         $params = [
@@ -216,21 +313,4 @@ class ElasticsearchService
         // Create the new index with the defined settings and mappings
         $this->client->indices()->create($params);
     }
-
-    /**
-     * delete article document by id
-     */
-    public function deleteArticleById($index, $id) {
-        try {
-            $response = $this->client->delete([
-                'index' => $index,
-                'id' => $id
-            ]);
-            return $response;  // You might want to return a more user-friendly message or result
-        } catch (\Exception $e) {
-            // Handle other possible exceptions
-            return ['error' => 'Error deleting document', 'message' => $e->getMessage()];
-        }
-    }
-
 }

@@ -19,8 +19,13 @@ class ArticleController extends Controller
         $this->articleService = $articleService;
     }
 
-    public function searchArticle(Request $request) {
-        // 验证请求数据
+    /**
+     * search article based on conditions
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function searchArticles(Request $request) {
         $validated = $request->validate([
             'keyword' => 'nullable|string|max:255',
             'categoryList' => 'nullable|array',
@@ -32,7 +37,7 @@ class ArticleController extends Controller
             'contentType' => 'required|in:article,announcement'
         ]);
 
-        $res = $this->articleService->search($validated);
+        $res = $this->articleService->searchArticles($validated);
         return response()->json($res, 200);
     }
 
@@ -58,13 +63,13 @@ class ArticleController extends Controller
     }
 
     public function updateArticle(Request $request) {
-        // 验证请求数据
         $validated = $request->validate([
             'articleId' => 'required|exists:articles,id',
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
             'contentHtml' => 'required|string',
+            'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:100',
             'tags' => 'nullable|array',
@@ -72,57 +77,15 @@ class ArticleController extends Controller
             'attachmentLink' => 'nullable|string|max:255'
         ]);
 
-        DB::beginTransaction();
-
         try {
-            $article = Article::findOrFail($validated['articleId']);
-
-            // determine if the category exist
-            $category = null;
-            if (!empty($validated['category'])) {
-                $category = Category::firstOrCreate(
-                    ['name' => $validated['category']],
-                    ['created_by' => $validated['authorId'], 'updated_by' => $validated['authorId']]
-                );
-            }
-
-            $article->update([
-                'title' => $validated['title'],
-                'sub_title' => $validated['subTitle'] ?? null,
-                'content' => $validated['contentHtml'],
-                'category_id' => $category ? $category->id : null,
-                'cover_image_link' => $validated['coverImageLink'] ?? null,
-                'attachment_link' => $validated['attachmentLink'] ?? null,
-                'updated_by' => $validated['authorId']
-            ]);
-
-            // 更新标签
-            LinkTagArticle::where('article_id', $article->id)->delete();
-            if (!empty($validated['tags'])) {
-                foreach ($validated['tags'] as $tagName) {
-                    $tag = Tag::firstOrCreate(
-                        ['name' => $tagName],
-                        ['created_by' => $validated['authorId'], 'updated_by' => $validated['authorId']]
-                    );
-                    LinkTagArticle::create([
-                        'article_id' => $article->id,
-                        'tag_id' => $tag->id,
-                        'created_by' => $validated['authorId'],
-                        'updated_by' => $validated['authorId']
-                    ]);
-                }
-            }
-
-            /*  update elasticsearch  */
-
-            DB::commit();
-
-            return response()->json($this->articleService->getArticleById($validated['articleId']), 200);
+            $res = $this->articleService->updateArticle($validated);
+            response()->json($res, 200);
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Failed to update article', ['error' => $e->getMessage()]);
+            Log::error($e->getMessage());
             return response()->json(['error' => 'Failed to update article', 'message' => $e->getMessage()], 500);
         }
+
+        return response()->json($this->articleService->updateArticle($validated), 200);
     }
 
     public function getArticle($id) {

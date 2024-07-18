@@ -4,25 +4,33 @@ namespace App\Services;
 
 use App\Models\Article;
 use App\Models\Category;
-use App\Models\Comment;
-use App\Models\Like;
-use App\Models\LinkTagArticle;
 use App\Models\QuanthubUser;
-use App\Models\Tag;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ArticleService
 {
     protected $elasticsearch;
+    protected $categoryService;
+    protected $tagService;
 
-    public function __construct(ElasticsearchService $elasticsearch) {
+    public function __construct(ElasticsearchService $elasticsearch,
+                                CategoryService      $categoryService,
+                                TagService           $tagService) {
         $this->elasticsearch = $elasticsearch;
+        $this->categoryService = $categoryService;
+        $this->tagService = $tagService;
     }
 
-    public function search($condition) {
+    /**
+     * conditional search articles in elasticsearch
+     *
+     * @param $condition
+     * @return array
+     */
+    public function searchArticles($condition) {
         try {
-            $res = $this->elasticsearch->search($condition);
+            $res = $this->elasticsearch->conditionalSearch($condition);
             $articleOverview = [];
             foreach ($res as $item) {
                 $currentArticle = $this->getArticleById($item['id']);
@@ -42,69 +50,46 @@ class ArticleService
         }
     }
 
+    /**
+     * create new article
+     *
+     * @param $data
+     * @return array
+     */
     public function createArticle($data) {
+        $author = QuanthubUser::findOrFail($data['authorId']);
+
         DB::beginTransaction();
 
         try {
-            // 获取或创建分类
-            $categoryId = null;
-            if (!empty($data['category'])) {
-                $category = Category::firstOrCreate(
-                    ['name' => $data['category']],
-                    ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
-                );
-                $categoryId = $category->id;
-            } else {
-                $category = Category::firstOrCreate(
-                    ['name' => 'unknown'],
-                    ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
-                );
-                $categoryId = $category->id;
-            }
+            // create category if not exist
+            $category = $this->categoryService->saveCategory($data['category'], $author->id);
 
-            // 创建新文章并保存到数据库
+            // create article and persis in mysql database
             $article = Article::create([
-                'author_id' => $data['authorId'],
+                'author_id' => $author->id,
                 'title' => $data['title'],
                 'sub_title' => $data['subTitle'] ?? null,
                 'content' => $data['contentHtml'],
-                'category_id' => $categoryId,
+                'category_id' => $category->id,
                 'rate' => 0,
                 'status' => $data['status'] ?? 'published',
                 'publish_date' => now(),
                 'cover_image_link' => $data['coverImageLink'] ?? null,
                 'attachment_link' => $data['attachmentLink'] ?? null,
-                'created_by' => $data['authorId'],
-                'updated_by' => $data['authorId']
+                'created_by' => $author->id,
+                'updated_by' => $author->id
             ]);
 
-            // 处理标签
+            // link tags and this article
+            $tagList = $this->tagService->connectTagsToArticle($data['tags'], $article->id, $author->id);
             $tagNameList = [];
-            if (!empty($data['tags'])) {
-                $tagIds = [];
-                foreach ($data['tags'] as $tagName) {
-                    $tag = Tag::firstOrCreate(
-                        ['name' => $tagName],
-                        ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
-                    );
-                    $tagIds[] = $tag->id;
-                    $tagNameList[] = $tag->name;
-                }
-
-                // 在link_tag_article表中插入数据
-                foreach ($tagIds as $tagId) {
-                    LinkTagArticle::create([
-                        'article_id' => $article->id,
-                        'tag_id' => $tagId,
-                        'created_by' => $data['authorId'],
-                        'updated_by' => $data['authorId']
-                    ]);
-                }
+            foreach ($tagList as $tag) {
+                $tagNameList[] = $tag->name;
             }
 
             // add to elasticsearch
-            $author = QuanthubUser::findOrFail($data['authorId']);
-            $this->elasticsearch->indexArticle([
+            $this->elasticsearch->createArticleDoc([
                 'index' => 'quanthub-articles',
                 'id' => $article->id,
                 'author' => [
@@ -123,14 +108,13 @@ class ArticleService
                 'publish_date' => now(),
                 'cover_image_link' => $data['coverImageLink'] ?? null,
                 'attachment_link' => $data['attachmentLink'] ?? null,
-                'created_by' => $data['authorId'],
-                'updated_by' => $data['authorId']
+                'created_by' => $author->id,
+                'updated_by' => $author->id
             ]);
 
             DB::commit();
 
-            // 准备返回的数据
-            $author = $article->author()->first();
+            // prepare response
             $response = [
                 'id' => (string)$article->id,
                 'title' => $article->title,
@@ -161,16 +145,95 @@ class ArticleService
         }
     }
 
+    public function updateArticle($articleData) {
+        DB::beginTransaction();
+
+        try {
+            $article = Article::with(['author'])->findOrFail($articleData['articleId']);
+
+            // save new category
+            $category = $this->categoryService->saveCategory($articleData['category'], $article->id);
+
+            $article->update([
+                'title' => $articleData['title'],
+                'sub_title' => $articleData['subTitle'] ?? null,
+                'content' => $articleData['contentHtml'],
+                'category_id' => $category->id,
+                'cover_image_link' => $articleData['coverImageLink'] ?? null,
+                'attachment_link' => $articleData['attachmentLink'] ?? null,
+                'updated_by' => $articleData['authorId']
+            ]);
+
+            // update tags
+            $this->tagService->disconnectTagsFromArticle($article->id);
+            $savedTags = $this->tagService->connectTagsToArticle($articleData['tags'], $article->id, $article->author->id);
+            $tagNameList = [];
+            foreach ($savedTags as $tag) {
+                $tagNameList[] = $tag->name;
+            }
+
+            /*  update elasticsearch  */
+            $this->elasticsearch->updateArticleDoc([
+                'index' => 'quanthub-articles',
+                'id' => $article->id,
+                'author' => [
+                    'id' => $article->author->id,
+                    'username' => $article->author->username,
+                    'email' => $article->author->email,
+                    'role' => $article->author->role
+                ],
+                'title' => $article->title,
+                'sub_title' => $article->sub_title,
+                'content' => $articleData['contentText'],
+                'type' => $article->author->role === 'admin' ? 'announcement' : 'article',
+                'category' => $category->name,
+                'tags' => $tagNameList,
+                'status' => $articleData['status'] ?? 'published',
+                'publish_date' => $articleData['publishDate'] ?? now(),
+                'cover_image_link' => $articleData['coverImageLink'] ?? null,
+                'attachment_link' => $articleData['attachmentLink'] ?? null,
+                'created_by' => $article->author->id,
+                'updated_by' => $article->author->id
+            ]);
+
+            // commit changes
+            DB::commit();
+
+            return $this->getArticleById($article->id);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update article', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * get article data by its id
+     *
+     * @param $id numeric
+     * @return array response
+     */
     public function getArticleById($id) {
-        $article = Article::findOrFail($id);
-        $author = QuanthubUser::findOrFail($article->author_id);
-        $comments = Comment::where('article_id', $article->id)->get();
-        $likes = Like::where('article_id', $article->id)->count();
-        $isLiking = Like::where('article_id', $article->id)->where('user_id', $author->id)->count();
-        $tags = LinkTagArticle::where('article_id', $article->id)->get()->map(function ($tagArticle) {
-            return Tag::find($tagArticle->tag_id);
-        });
-        $category = Category::find($article->category_id);
+        $article = Article::with(['author', 'comments', 'likes', 'tags'])->findOrFail($id);
+        $author = $article->author;
+        $comments = $article->comments ? $article->comments : [];
+        $likes = $article->likes ? $article->likes : [];
+        $isLiking = false;
+        foreach ($likes as $like) {
+            if ($like->author_id === $author->id) {
+                $isLiking = true;
+                break;
+            }
+        }
+        $tags = $article->tags ? $article->tags : [];
+        $category = null;
+        if ($article->category) {
+            $category = $article->category;
+        } else {
+            $category = Category::firstOrCreate(
+                ['name' => 'unknown'],
+                ['created_by' => $author->id, 'updated_by' => $author->id]
+            );
+        }
 
         $response = [
             'id' => (string)$article->id,
@@ -183,11 +246,12 @@ class ArticleService
             'contentHtml' => $article->content,
             'coverImageLink' => $article->cover_image_link,
             'rate' => 0,
-            'comments' => $comments ? $comments->map(function ($comment, $author) {
+            'comments' => $comments->map(function ($comment, $author) {
                 return ['id' => $comment->id,
                     'articleId' => $comment->article_id,
                     'content' => $comment->content,
-                    'user' => ['id' => $author->id,
+                    'user' => [
+                        'id' => $author->id,
                         'auth0Id' => $author->auth0Id,
                         'username' => $author->username,
                         'role' => $author->role,
@@ -195,11 +259,16 @@ class ArticleService
                     'publishTillToday' => '3 days ago',
                     'status' => 'normal'
                 ];
-            }) : null,
+            }),
             'likes' => $likes,
-            'isLiking' => $isLiking > 0,
+            'isLiking' => $isLiking,
             'views' => 1,
-            'author' => ['id' => $author->id, 'username' => $author->username, 'role' => $author->role, 'avatarLink' => $author->avatarLink],
+            'author' => [
+                'id' => $article->author->id,
+                'username' => $article->author->username,
+                'role' => $article->author->role,
+                'avatarLink' => $article->author->avatarLink
+            ],
             'publishTimestamp' => (int)$article->created_at->timestamp,
             'updateTimestamp' => (int)$article->updated_at->timestamp,
             'publishTillToday' => '3 days ago',
@@ -208,6 +277,12 @@ class ArticleService
         return $response;
     }
 
+    /**
+     * delete the designated article both in mysql and es
+     *
+     * @param $id
+     * @return void
+     */
     public function deleteArticle($id) {
         Article::destroy($id);
         $this->elasticsearch->deleteArticleById('quanthub-articles', $id);
