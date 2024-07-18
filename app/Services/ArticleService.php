@@ -27,7 +27,11 @@ class ArticleService
             foreach ($res as $item) {
                 $currentArticle = $this->getArticleById($item['id']);
                 $currentArticle['commentsCount'] = $currentArticle['comments']->count();
-                $currentArticle['description'] = $item['source']['content'];
+                $description = $item['source']['content'];
+                if (strlen($description) > 350) {
+                    $description = substr($description, 0, 350) . '...';
+                }
+                $currentArticle['description'] = $description;
                 $articleOverview[] = $currentArticle;
             }
             return $articleOverview;
@@ -44,14 +48,18 @@ class ArticleService
         try {
             // 获取或创建分类
             $categoryId = null;
-            $categoryData = null;
             if (!empty($data['category'])) {
                 $category = Category::firstOrCreate(
                     ['name' => $data['category']],
                     ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
                 );
                 $categoryId = $category->id;
-                $categoryData = ['id' => $category->id, 'name' => $category->name];
+            } else {
+                $category = Category::firstOrCreate(
+                    ['name' => 'unknown'],
+                    ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
+                );
+                $categoryId = $category->id;
             }
 
             // 创建新文章并保存到数据库
@@ -71,7 +79,6 @@ class ArticleService
             ]);
 
             // 处理标签
-            $tagsData = [];
             $tagNameList = [];
             if (!empty($data['tags'])) {
                 $tagIds = [];
@@ -81,7 +88,6 @@ class ArticleService
                         ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
                     );
                     $tagIds[] = $tag->id;
-                    $tagsData[] = ['id' => $tag->id, 'name' => $tag->name];
                     $tagNameList[] = $tag->name;
                 }
 
@@ -111,7 +117,7 @@ class ArticleService
                 'sub_title' => $article->sub_title,
                 'content' => $data['contentText'],
                 'type' => $article->author->role === 'admin' ? 'announcement' : 'article',
-                'category' => $data['category'],
+                'category' => $category->name,
                 'tags' => $tagNameList,
                 'status' => $data['status'] ?? 'published',
                 'publish_date' => now(),
@@ -129,8 +135,8 @@ class ArticleService
                 'id' => (string)$article->id,
                 'title' => $article->title,
                 'subtitle' => $article->sub_title,
-                'tags' => $tagsData,
-                'category' => $categoryData,
+                'tags' => $tagNameList,
+                'category' => $category->name,
                 'contentHtml' => $article->content,
                 'comments' => [],
                 'likes' => '0',
@@ -165,19 +171,15 @@ class ArticleService
             return Tag::find($tagArticle->tag_id);
         });
         $category = Category::find($article->category_id);
-        $category_data = null;
-        if (!empty($category)) {
-            $category_data = ['id' => $category->id, 'name' => $category->name];
-        }
 
         $response = [
             'id' => (string)$article->id,
             'title' => $article->title,
             'subtitle' => $article->sub_title,
-            'tags' => $tags->map(function ($tag) {
-                return ['id' => (string)$tag->id, 'name' => $tag->name];
-            }),
-            'category' => $category_data,
+            'tags' => $tags ? $tags->map(function ($tag) {
+                return $tag->name;
+            }) : [],
+            'category' => $category ? $category->name : "unknown",
             'contentHtml' => $article->content,
             'coverImageLink' => $article->cover_image_link,
             'rate' => 0,
@@ -204,5 +206,10 @@ class ArticleService
             'updateTillToday' => 'yesterday'
         ];
         return $response;
+    }
+
+    public function deleteArticle($id) {
+        Article::destroy($id);
+        $this->elasticsearch->deleteArticleById('quanthub-articles', $id);
     }
 }

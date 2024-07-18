@@ -155,7 +155,7 @@ class ArticleController extends Controller
     }
 
     public function deleteArticle($id) {
-        Article::destroy($id);
+        $this->articleService->deleteArticle($id);
     }
 
 }

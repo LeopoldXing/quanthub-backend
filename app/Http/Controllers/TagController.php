@@ -17,7 +17,9 @@ class TagController extends Controller
         if ($number < 30) {
             $number = 30;
         }
-        $res = $this->tagService->getRandomTags($number);
+        $res = $this->tagService->getRandomTags($number)->map(function ($item) {
+            return $item->name;
+        });
         return response()->json($res, 200);
     }
 }

@@ -217,4 +217,20 @@ class ElasticsearchService
         $this->client->indices()->create($params);
     }
 
+    /**
+     * delete article document by id
+     */
+    public function deleteArticleById($index, $id) {
+        try {
+            $response = $this->client->delete([
+                'index' => $index,
+                'id' => $id
+            ]);
+            return $response;  // You might want to return a more user-friendly message or result
+        } catch (\Exception $e) {
+            // Handle other possible exceptions
+            return ['error' => 'Error deleting document', 'message' => $e->getMessage()];
+        }
+    }
+
 }
