@@ -22,14 +22,15 @@ class ArticleService
 
     public function search($condition) {
         try {
-            $res = Article::all();
-            $overviewList = $res->map(function ($item) {
-                $currentArticle = $this->getArticleById($item->id);
+            $res = $this->elasticsearch->search($condition);
+            $articleOverview = [];
+            foreach ($res as $item) {
+                $currentArticle = $this->getArticleById($item['id']);
                 $currentArticle['commentsCount'] = $currentArticle['comments']->count();
-                $currentArticle['description'] = $currentArticle['contentHtml'];
-                return $currentArticle;
-            });
-            return $overviewList;
+                $currentArticle['description'] = $item['source']['content'];
+                $articleOverview[] = $currentArticle;
+            }
+            return $articleOverview;
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());
             Log::error('Failed to search', ['error' => $exception->getMessage()]);
@@ -69,6 +70,32 @@ class ArticleService
                 'updated_by' => $data['authorId']
             ]);
 
+            // 处理标签
+            $tagsData = [];
+            $tagNameList = [];
+            if (!empty($data['tags'])) {
+                $tagIds = [];
+                foreach ($data['tags'] as $tagName) {
+                    $tag = Tag::firstOrCreate(
+                        ['name' => $tagName],
+                        ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
+                    );
+                    $tagIds[] = $tag->id;
+                    $tagsData[] = ['id' => $tag->id, 'name' => $tag->name];
+                    $tagNameList[] = $tag->name;
+                }
+
+                // 在link_tag_article表中插入数据
+                foreach ($tagIds as $tagId) {
+                    LinkTagArticle::create([
+                        'article_id' => $article->id,
+                        'tag_id' => $tagId,
+                        'created_by' => $data['authorId'],
+                        'updated_by' => $data['authorId']
+                    ]);
+                }
+            }
+
             // add to elasticsearch
             $author = QuanthubUser::findOrFail($data['authorId']);
             $this->elasticsearch->indexArticle([
@@ -84,6 +111,8 @@ class ArticleService
                 'sub_title' => $article->sub_title,
                 'content' => $data['contentText'],
                 'type' => $article->author->role === 'admin' ? 'announcement' : 'article',
+                'category' => $data['category'],
+                'tags' => $tagNameList,
                 'status' => $data['status'] ?? 'published',
                 'publish_date' => now(),
                 'cover_image_link' => $data['coverImageLink'] ?? null,
@@ -91,30 +120,6 @@ class ArticleService
                 'created_by' => $data['authorId'],
                 'updated_by' => $data['authorId']
             ]);
-
-            // 处理标签
-            $tagsData = [];
-            if (!empty($data['tags'])) {
-                $tagIds = [];
-                foreach ($data['tags'] as $tagName) {
-                    $tag = Tag::firstOrCreate(
-                        ['name' => $tagName],
-                        ['created_by' => $data['authorId'], 'updated_by' => $data['authorId']]
-                    );
-                    $tagIds[] = $tag->id;
-                    $tagsData[] = ['id' => $tag->id, 'name' => $tag->name];
-                }
-
-                // 在link_tag_article表中插入数据
-                foreach ($tagIds as $tagId) {
-                    LinkTagArticle::create([
-                        'article_id' => $article->id,
-                        'tag_id' => $tagId,
-                        'created_by' => $data['authorId'],
-                        'updated_by' => $data['authorId']
-                    ]);
-                }
-            }
 
             DB::commit();
 

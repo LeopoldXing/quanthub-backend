@@ -14,5 +14,6 @@ Route::post('/article/publish', [ArticleController::class, 'publishArticle']);
 Route::put('/article/update', [ArticleController::class, 'updateArticle']);
 Route::get('/article/{id}', [ArticleController::class, 'getArticle']);
 Route::post('/article/draft', [ArticleController::class, 'createDraft']);
+Route::delete('/article/{id}', [ArticleController::class, 'deleteArticle']);
 
 Route::get('/tag/{number}', [TagController::class, 'shuffleTags']);

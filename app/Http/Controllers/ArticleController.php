@@ -154,4 +154,8 @@ class ArticleController extends Controller
         return response()->json($res['response'], $res['status']);
     }
 
+    public function deleteArticle($id) {
+        Article::destroy($id);
+    }
+
 }

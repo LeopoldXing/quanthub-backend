@@ -14,6 +14,122 @@ class ElasticsearchService
         $this->client = ClientBuilder::create()->setHosts([$hosts])->build();
     }
 
+    public function search($params) {
+        $query = [
+            'bool' => [
+                'must' => [],
+                'filter' => []
+            ]
+        ];
+
+        // Keyword search
+        if (!empty($params['keyword'])) {
+            $query['bool']['must'][] = [
+                'multi_match' => [
+                    'query' => $params['keyword'],
+                    'fields' => ['title^3', 'sub_title^2', 'content', 'author.username']
+                ]
+            ];
+        }
+
+        // Category filter
+        if (!empty($params['categoryList'])) {
+            $query['bool']['filter'][] = [
+                'terms' => [
+                    'category' => $params['categoryList']
+                ]
+            ];
+        }
+
+        // Tag filter
+        if (!empty($params['tagList'])) {
+            $query['bool']['filter'][] = [
+                'terms' => [
+                    'tags' => $params['tagList']
+                ]
+            ];
+        }
+
+        // Content type filter
+        if (!empty($params['contentType'])) {
+            $query['bool']['filter'][] = [
+                'term' => [
+                    'type' => $params['contentType']
+                ]
+            ];
+        }
+
+        // Build the final query array
+        $searchParams = [
+            'index' => 'quanthub-articles',
+            'body' => [
+                'query' => $query,
+                'sort' => $this->buildSortParams($params)
+            ]
+        ];
+
+        $response = $this->client->search($searchParams);
+
+        // Process the results
+        $results = [];
+        foreach ($response['hits']['hits'] as $hit) {
+            $results[] = [
+                'id' => $hit['_id'],
+                'score' => $hit['_score'],
+                'source' => $hit['_source'] // This contains the actual data of the document
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Indexes an article in Elasticsearch.
+     */
+    public function indexArticle($articleData) {
+        Log::info("Indexing article with ID: {$articleData['id']}");
+        Log::info("Author data: " . json_encode($articleData['author']));
+        return $this->client->index([
+            'index' => 'quanthub-articles',
+            'id' => $articleData['id'],
+            'body' => [
+                'author' => $articleData['author'],
+                'title' => $articleData['title'],
+                'sub_title' => $articleData['sub_title'],
+                'content' => $articleData['content'],
+                'type' => $articleData['type'],
+                'status' => $articleData['status'],
+                'category' => $articleData['category'],
+                'tags' => $articleData['tags'],
+                'publish_date' => $articleData['publish_date'],
+                'cover_image_link' => $articleData['cover_image_link'],
+                'attachment_link' => $articleData['attachment_link'],
+                'created_by' => $articleData['created_by'],
+                'updated_by' => $articleData['updated_by']
+            ]
+        ]);
+    }
+
+
+    private function buildSortParams($params) {
+        $sort = [];
+        if (!empty($params['sortStrategy']) && $params['sortDirection'] !== 'none') {
+            $direction = $params['sortDirection'] ?? 'desc'; // Default to descending
+            switch ($params['sortStrategy']) {
+                case 'publish_date':
+                    $sort = ['publish_date' => ['order' => $direction]];
+                    break;
+                case 'update_date':
+                    $sort = ['updated_at' => ['order' => $direction]];
+                    break;
+                case 'recommended':
+                    // 'recommended' is a score or similar
+                    $sort = ['recommendation_score' => ['order' => $direction]];
+                    break;
+            }
+        }
+        return $sort;
+    }
 
     /**
      * Creates an index with mappings tailored for the 'articles' index.
@@ -55,13 +171,17 @@ class ElasticsearchService
                         'content' => [
                             'type' => 'text'
                         ],
+                        'category' => [
+                            'type' => 'keyword'
+                        ],
+                        'tags' => [
+                            'type' => 'keyword'
+                        ],
                         'type' => [
                             'type' => 'keyword',
-                            'index' => false
                         ],
                         'status' => [
                             'type' => 'keyword',
-                            'index' => false
                         ],
                         'publish_date' => [
                             'type' => 'date',
@@ -97,28 +217,4 @@ class ElasticsearchService
         $this->client->indices()->create($params);
     }
 
-    /**
-     * Indexes an article in Elasticsearch.
-     */
-    public function indexArticle($articleData) {
-        Log::info("Indexing article with ID: {$articleData['id']}");
-        Log::info("Author data: " . json_encode($articleData['author']));
-        return $this->client->index([
-            'index' => 'quanthub-articles',
-            'id' => $articleData['id'],
-            'body' => [
-                'author' => $articleData['author'],
-                'title' => $articleData['title'],
-                'sub_title' => $articleData['sub_title'],
-                'content' => $articleData['content'],
-                'type' => $articleData['type'],
-                'status' => $articleData['status'],
-                'publish_date' => $articleData['publish_date'],
-                'cover_image_link' => $articleData['cover_image_link'],
-                'attachment_link' => $articleData['attachment_link'],
-                'created_by' => $articleData['created_by'],
-                'updated_by' => $articleData['updated_by']
-            ]
-        ]);
-    }
 }
