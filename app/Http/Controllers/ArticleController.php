@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\services\ArticleService;
-use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\Category;
-use App\Models\Tag;
 use App\Models\LinkTagArticle;
+use App\Models\Tag;
+use App\Services\ArticleService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -43,6 +43,7 @@ class ArticleController extends Controller
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
             'contentHtml' => 'required|string',
+            'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:100',
             'tags' => 'nullable|array',
@@ -111,6 +112,8 @@ class ArticleController extends Controller
                     ]);
                 }
             }
+
+            /*  update elasticsearch  */
 
             DB::commit();
 

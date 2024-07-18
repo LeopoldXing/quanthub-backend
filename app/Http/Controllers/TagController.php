@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\services\TagService;
+use App\Services\TagService;
 
 class TagController extends Controller
 {

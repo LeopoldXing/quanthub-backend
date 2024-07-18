@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Log;
 
 class ArticleService
 {
+    protected $elasticsearch;
+
+    public function __construct(ElasticsearchService $elasticsearch) {
+        $this->elasticsearch = $elasticsearch;
+    }
+
     public function search($condition) {
         try {
             $res = Article::all();
@@ -55,6 +61,29 @@ class ArticleService
                 'content' => $data['contentHtml'],
                 'category_id' => $categoryId,
                 'rate' => 0,
+                'status' => $data['status'] ?? 'published',
+                'publish_date' => now(),
+                'cover_image_link' => $data['coverImageLink'] ?? null,
+                'attachment_link' => $data['attachmentLink'] ?? null,
+                'created_by' => $data['authorId'],
+                'updated_by' => $data['authorId']
+            ]);
+
+            // add to elasticsearch
+            $author = QuanthubUser::findOrFail($data['authorId']);
+            $this->elasticsearch->indexArticle([
+                'index' => 'quanthub-articles',
+                'id' => $article->id,
+                'author' => [
+                    'id' => $author->id,
+                    'username' => $author->username,
+                    'email' => $author->email,
+                    'role' => $author->role
+                ],
+                'title' => $article->title,
+                'sub_title' => $article->sub_title,
+                'content' => $data['contentText'],
+                'type' => $article->author->role === 'admin' ? 'announcement' : 'article',
                 'status' => $data['status'] ?? 'published',
                 'publish_date' => now(),
                 'cover_image_link' => $data['coverImageLink'] ?? null,

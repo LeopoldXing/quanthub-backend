@@ -17,14 +17,13 @@ services:
       timeout: 10s
       retries: 3
 
-  # ELK Stack
   es01:
-    container_name: elasticsearch01-quanthub-dev
+    container_name: es01-quanthub-dev
     image: elasticsearch:8.14.1
     environment:
       - discovery.type=single-node
       - bootstrap.memory_lock=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - xpack.security.enabled=false
       # enable SSL
       # - xpack.security.enabled=true
@@ -41,6 +40,7 @@ services:
     #   - es01-log-data:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
+      - "9300:9300"
     networks:
       - quanthub-dev-network
     healthcheck:

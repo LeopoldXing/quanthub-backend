@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Article extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'author_id', 'title', 'sub_title', 'content', 'category_id', 'rate', 'status', 'cover_image_link', 'publish_date', 'attachment_link', 'created_by', 'updated_by'
+        'author_id', 'title', 'sub_title', 'content', 'category_id', 'rate', 'status',
+        'cover_image_link', 'publish_date', 'attachment_link', 'created_by', 'updated_by'
     ];
 
     public function author() {
@@ -18,10 +16,20 @@ class Article extends Model
     }
 
     public function category() {
-        return $this->belongsTo(Category::class, 'category_id');
+        return $this->belongsTo(Category::class);
+    }
+
+    public function comments() {
+        return $this->hasMany(Comment::class, 'article_id');
     }
 
     public function tags() {
-        return $this->belongsToMany(Tag::class, 'link_tag_articles', 'article_id', 'tag_id');
+        return $this->belongsToMany(Tag::class, 'link_tag_articles', 'article_id', 'tag_id')
+            ->using(LinkTagArticle::class)
+            ->withPivot('created_by', 'updated_by');
+    }
+
+    public function likes() {
+        return $this->hasMany(Like::class, 'article_id');
     }
 }

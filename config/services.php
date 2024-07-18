@@ -14,6 +14,11 @@ return [
     |
     */
 
+    'elasticsearch' => [
+        'hosts' => env('ELASTICSEARCH_HOST', 'localhost:9200'),  // Ensure this is a string
+    ],
+
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
