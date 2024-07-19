@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Article extends Model
 {
     protected $fillable = [
-        'author_id', 'title', 'sub_title', 'content', 'category_id', 'rate', 'status',
+        'author_id', 'title', 'sub_title', 'content', 'category_id', 'rate', 'status', 'type', 'draft_reference_id',
         'cover_image_link', 'publish_date', 'attachment_link', 'created_by', 'updated_by'
     ];
 
@@ -16,7 +16,7 @@ class Article extends Model
     }
 
     public function category() {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class, 'category_id');
     }
 
     public function comments() {

@@ -74,6 +74,7 @@ class ArticleService
                 'category_id' => $category->id,
                 'rate' => 0,
                 'status' => $data['status'] ?? 'published',
+                'type' => $data['type'] ?: 'article',
                 'publish_date' => now(),
                 'cover_image_link' => $data['coverImageLink'] ?? null,
                 'attachment_link' => $data['attachmentLink'] ?? null,
@@ -122,6 +123,7 @@ class ArticleService
                 'tags' => $tagNameList,
                 'category' => $category->name,
                 'contentHtml' => $article->content,
+                'type' => $article->type,
                 'comments' => [],
                 'likes' => '0',
                 'isLiking' => false,
@@ -246,6 +248,7 @@ class ArticleService
             'contentHtml' => $article->content,
             'coverImageLink' => $article->cover_image_link,
             'rate' => 0,
+            'type' => $article->type,
             'comments' => $comments->map(function ($comment, $author) {
                 return ['id' => $comment->id,
                     'articleId' => $comment->article_id,

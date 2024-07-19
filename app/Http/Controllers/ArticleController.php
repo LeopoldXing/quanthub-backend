@@ -2,13 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Article;
-use App\Models\Category;
-use App\Models\LinkTagArticle;
-use App\Models\Tag;
 use App\Services\ArticleService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ArticleController extends Controller
@@ -30,6 +25,7 @@ class ArticleController extends Controller
             'keyword' => 'nullable|string|max:255',
             'categoryList' => 'nullable|array',
             'categoryList.*' => 'string|max:100',
+            'type' => 'nullable|string|in:article,announcement,draft',
             'tagList' => 'nullable|array',
             'tagList.*' => 'string|max:100',
             'sortStrategy' => 'nullable|in:publish_date,update_date,recommended',
@@ -47,6 +43,7 @@ class ArticleController extends Controller
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
+            'type' => 'required|in:article',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
@@ -68,6 +65,7 @@ class ArticleController extends Controller
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
+            'type' => 'required|in:article,announcement,draft',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
@@ -95,26 +93,6 @@ class ArticleController extends Controller
             Log::error('Failed to get article', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to get article', 'message' => $e->getMessage()], 500);
         }
-    }
-
-    public function createDraft(Request $request) {
-        // 验证请求数据
-        $validated = $request->validate([
-            'authorId' => 'required|exists:quanthub_users,id',
-            'title' => 'required|string|max:255',
-            'subTitle' => 'nullable|string|max:255',
-            'contentHtml' => 'required|string',
-            'coverImageLink' => 'nullable|string|max:255',
-            'category' => 'nullable|string|max:100',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:100',
-            'attachmentLink' => 'nullable|string|max:255'
-        ]);
-        $validated['status'] = 'draft';
-
-        $res = $this->articleService->createArticle($validated);
-
-        return response()->json($res['response'], $res['status']);
     }
 
     public function deleteArticle($id) {

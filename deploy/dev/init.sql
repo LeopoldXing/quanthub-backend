@@ -38,27 +38,29 @@ CREATE TABLE `categories`
 -- quanthub.articles definition
 CREATE TABLE `articles`
 (
-    `id`               bigint unsigned NOT NULL AUTO_INCREMENT,
-    `author_id`        bigint unsigned NOT NULL,
-    `title`            varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `sub_title`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `content`          text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
-    `category_id`      bigint unsigned DEFAULT NULL,
-    `rate`             decimal(3, 1)                                                 DEFAULT NULL,
-    `status`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `cover_image_link` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `publish_date`     date                                                          DEFAULT NULL,
-    `attachment_link`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `created_by`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `created_at`       timestamp NULL DEFAULT NULL,
-    `updated_at`       timestamp NULL DEFAULT NULL,
+    `id`                 bigint unsigned NOT NULL AUTO_INCREMENT,
+    `author_id`          bigint unsigned NOT NULL,
+    `title`              varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `sub_title`          varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `content`            text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `category_id`        bigint unsigned DEFAULT NULL,
+    `rate`               decimal(3, 1)                                                 DEFAULT NULL,
+    `status`             varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `type`               varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `draft_reference_id` bigint unsigned DEFAULT NULL,
+    `cover_image_link`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `publish_date`       date                                                          DEFAULT NULL,
+    `attachment_link`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `created_by`         varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `updated_by`         varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `created_at`         timestamp NULL DEFAULT NULL,
+    `updated_at`         timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    KEY                `articles_quanthub_users_FK` (`author_id`),
-    KEY                `articles_categories_FK` (`category_id`),
-    CONSTRAINT `articles_categories_FK` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
-    CONSTRAINT `articles_quanthub_users_FK` FOREIGN KEY (`author_id`) REFERENCES `quanthub_users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    KEY                  `articles_author_id_foreign` (`author_id`),
+    KEY                  `articles_category_id_foreign` (`category_id`),
+    CONSTRAINT `articles_author_id_foreign` FOREIGN KEY (`author_id`) REFERENCES `quanthub_users` (`id`),
+    CONSTRAINT `articles_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- quanthub.comments definition
 CREATE TABLE `comments`
