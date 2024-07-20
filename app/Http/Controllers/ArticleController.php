@@ -30,7 +30,6 @@ class ArticleController extends Controller
             'tagList.*' => 'string|max:100',
             'sortStrategy' => 'nullable|in:publish_date,update_date,recommended',
             'sortDirection' => 'nullable|in:desc,asc,none',
-            'contentType' => 'required|in:article,announcement'
         ]);
 
         $res = $this->articleService->searchArticles($validated);
@@ -43,7 +42,7 @@ class ArticleController extends Controller
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
-            'type' => 'required|in:article',
+            'type' => 'required|in:article,announcement,draft',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',

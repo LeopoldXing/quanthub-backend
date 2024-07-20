@@ -57,13 +57,18 @@ class ArticleService
      * @return array
      */
     public function createArticle($data) {
-        $author = QuanthubUser::findOrFail($data['authorId']);
-
         DB::beginTransaction();
 
         try {
+            $author = QuanthubUser::findOrFail($data['authorId']);
+
             // create category if not exist
-            $category = $this->categoryService->saveCategory($data['category'], $author->id);
+            if (isset($data['category'])) {
+                $category = $this->categoryService->saveCategory($data['category'], $author->id);
+            } else {
+                $category = $this->categoryService->saveCategory("unknown", $author->id);
+            }
+
 
             // create article and persis in mysql database
             $article = Article::create([
@@ -102,7 +107,7 @@ class ArticleService
                 'title' => $article->title,
                 'sub_title' => $article->sub_title,
                 'content' => $data['contentText'],
-                'type' => $article->author->role === 'admin' ? 'announcement' : 'article',
+                'type' => $article->type,
                 'category' => $category->name,
                 'tags' => $tagNameList,
                 'status' => $data['status'] ?? 'published',
@@ -187,7 +192,7 @@ class ArticleService
                 'title' => $article->title,
                 'sub_title' => $article->sub_title,
                 'content' => $articleData['contentText'],
-                'type' => $article->author->role === 'admin' ? 'announcement' : 'article',
+                'type' => $article->type,
                 'category' => $category->name,
                 'tags' => $tagNameList,
                 'status' => $articleData['status'] ?? 'published',

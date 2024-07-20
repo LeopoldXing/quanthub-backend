@@ -59,10 +59,10 @@ class ElasticsearchService
         }
 
         // Content type filter
-        if (!empty($params['contentType'])) {
+        if (!empty($params['type'])) {
             $query['bool']['filter'][] = [
                 'term' => [
-                    'type' => $params['contentType']
+                    'type' => $params['type']
                 ]
             ];
         }
