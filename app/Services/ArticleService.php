@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\QuanthubUser;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use function PHPUnit\Framework\isEmpty;
 
 class ArticleService
 {
@@ -14,15 +16,18 @@ class ArticleService
     protected CategoryService $categoryService;
     protected TagService $tagService;
     protected CommentService $commentService;
+    protected LikingService $likesService;
 
     public function __construct(ElasticsearchService $elasticsearch,
                                 CategoryService      $categoryService,
                                 TagService           $tagService,
-                                CommentService       $commentService) {
+                                CommentService       $commentService,
+                                LikingService        $likesService) {
         $this->elasticsearch = $elasticsearch;
         $this->categoryService = $categoryService;
         $this->tagService = $tagService;
         $this->commentService = $commentService;
+        $this->likesService = $likesService;
     }
 
     /**
@@ -37,18 +42,16 @@ class ArticleService
             $articleOverview = [];
             foreach ($res as $item) {
                 $articleId = $item['id'];
-                $currentArticle = $this->getArticleById($articleId);
-                $currentArticle['commentsCount'] = count($currentArticle['comments']);
                 $description = $item['source']['content'];
                 if (strlen($description) > 350) {
                     $description = substr($description, 0, 350) . '...';
                 }
-                $currentArticle['description'] = $description;
+                $currentArticle = $this->getArticleOverviewData($articleId, $description);
                 $articleOverview[] = $currentArticle;
             }
 
             return $articleOverview;
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             Log::error($exception->getMessage());
             Log::error('Failed to search', ['error' => $exception->getMessage()]);
             return ['response' => ['error' => 'Failed to search', 'message' => $exception->getMessage()], 'status' => 500];
@@ -84,10 +87,11 @@ class ArticleService
                 'category_id' => $category->id,
                 'rate' => 0,
                 'status' => $data['status'] ?? 'published',
-                'type' => $data['type'] ?: 'article',
+                'type' => isEmpty($data['type']) ? 'article' : $data['type'],
                 'publish_date' => now(),
                 'cover_image_link' => $data['coverImageLink'] ?? null,
                 'attachment_link' => $data['attachmentLink'] ?? null,
+                'draft_reference_id' => $data['referenceId'] ?? null,
                 'created_by' => $author->id,
                 'updated_by' => $author->id
             ]);
@@ -100,30 +104,37 @@ class ArticleService
             }
 
             // add to elasticsearch
-            $this->elasticsearch->createArticleDoc([
-                'index' => 'quanthub-articles',
-                'id' => $article->id,
-                'author' => [
-                    'id' => $author->id,
-                    'username' => $author->username,
-                    'email' => $author->email,
-                    'role' => $author->role
-                ],
-                'title' => $article->title,
-                'sub_title' => $article->sub_title,
-                'content' => $data['contentText'],
-                'type' => $article->type,
-                'category' => $category->name,
-                'tags' => $tagNameList,
-                'status' => $data['status'] ?? 'published',
-                'publish_date' => now(),
-                'cover_image_link' => $data['coverImageLink'] ?? null,
-                'attachment_link' => $data['attachmentLink'] ?? null,
-                'created_by' => $author->id,
-                'updated_by' => $author->id
-            ]);
+            if ($data['type'] != 'draft') {
+                $this->elasticsearch->createArticleDoc([
+                    'index' => 'quanthub-articles',
+                    'id' => $article->id,
+                    'author' => [
+                        'id' => $author->id,
+                        'username' => $author->username,
+                        'email' => $author->email,
+                        'role' => $author->role
+                    ],
+                    'title' => $article->title,
+                    'sub_title' => $article->sub_title,
+                    'content' => $data['contentText'],
+                    'type' => $article->type,
+                    'category' => $category->name,
+                    'tags' => $tagNameList,
+                    'status' => $data['status'] ?? 'published',
+                    'publish_date' => now(),
+                    'cover_image_link' => $data['coverImageLink'] ?? null,
+                    'attachment_link' => $data['attachmentLink'] ?? null,
+                    'created_by' => $author->id,
+                    'updated_by' => $author->id
+                ]);
+            }
 
             DB::commit();
+
+            /*  delete related draft  */
+            if (isset($data['draftId'])) {
+                Article::destroy($data['draftId']);
+            }
 
             // prepare response
             $response = [
@@ -150,7 +161,7 @@ class ArticleService
             ];
 
             return ['response' => $response, 'status' => 201];
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             Log::error('Failed to create article', ['error' => $e->getMessage()]);
             return ['response' => ['error' => 'Failed to create article', 'message' => $e->getMessage()], 'status' => 500];
@@ -211,10 +222,16 @@ class ArticleService
             // commit changes
             DB::commit();
 
+            /*  delete related draft  */
+            if (isset($articleData['draftId'])) {
+                Article::destroy($articleData['draftId']);
+            }
+
             return $this->getArticleById($article->id);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             Log::error('Failed to update article', ['error' => $e->getMessage()]);
+            return null;
         }
     }
 
@@ -261,8 +278,8 @@ class ArticleService
             'rate' => 0,
             'type' => $article->type,
             'comments' => $commentData,
-            'likes' => $likes,
-            'isLiking' => $isLiking,
+            'likes' => $likes->count(),
+            'isLiking' => $this->likesService->isThisArticleLiked($id, $article->author->id),
             'views' => 1,
             'author' => [
                 'id' => $article->author->id,
@@ -275,6 +292,53 @@ class ArticleService
             'publishTillToday' => '3 days ago',
             'updateTillToday' => 'yesterday'
         ];
+
+        return $response;
+    }
+
+    public function getArticleOverviewData($articleId, $description) {
+        $article = Article::with(['author', 'likes', 'tags'])->findOrFail($articleId);
+        $author = $article->author;
+        $likes = $article->likes ? $article->likes : [];
+        $tags = $article->tags ? $article->tags : [];
+        if ($article->category) {
+            $category = $article->category;
+        } else {
+            $category = Category::firstOrCreate(
+                ['name' => 'unknown'],
+                ['created_by' => $author->id, 'updated_by' => $author->id]
+            );
+        }
+
+        $commentData = $this->commentService->getCommentsByArticleId($article->id)['data'];
+
+        $response = [
+            'id' => $articleId,
+            'title' => $article->title,
+            'subtitle' => $article->sub_title,
+            'tags' => $tags ? $tags->map(function ($tag) {
+                return $tag->name;
+            }) : [],
+            'category' => $category->name,
+            'description' => $description,
+            'coverImageLink' => $article->cover_image_link,
+            'rate' => 0,
+            'type' => $article->type,
+            'commentsCount' => count($commentData),
+            'likes' => $likes->count(),
+            'views' => 1,
+            'author' => [
+                'id' => $article->author->id,
+                'username' => $article->author->username,
+                'role' => $article->author->role,
+                'avatarLink' => $article->author->avatar_link
+            ],
+            'publishTimestamp' => (int)$article->created_at->timestamp,
+            'updateTimestamp' => (int)$article->updated_at->timestamp,
+            'publishTillToday' => '3 days ago',
+            'updateTillToday' => 'yesterday'
+        ];
+
         return $response;
     }
 

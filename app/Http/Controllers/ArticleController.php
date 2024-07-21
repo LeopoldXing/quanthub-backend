@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\ArticleService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,25 @@ class ArticleController extends Controller
     public function __construct(ArticleService $articleService) {
         $this->articleService = $articleService;
     }
+
+    /**
+     * Recursively clean array data to ensure UTF-8 encoding
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    function cleanArrayData($data): mixed {
+        if (is_array($data)) {
+            foreach ($data as $key => $value) {
+                $data[$key] = $this->cleanArrayData($value);
+            }
+        } elseif (is_string($data)) {
+            $data = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+        }
+
+        return $data;
+    }
+
 
     /**
      * search article based on conditions
@@ -34,6 +54,7 @@ class ArticleController extends Controller
         ]);
 
         $res = $this->articleService->searchArticles($validated);
+        $res = $this->cleanArrayData($res);
         return response()->json($res, 200);
     }
 
@@ -46,7 +67,7 @@ class ArticleController extends Controller
     public function getArticle($id): JsonResponse {
         try {
             return response()->json($this->articleService->getArticleById($id), 200);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to get article', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to get article', 'message' => $e->getMessage()], 500);
         }
@@ -63,8 +84,13 @@ class ArticleController extends Controller
         $this->articleService->deleteArticle($id);
     }
 
+    /**
+     * publish article
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function publishArticle(Request $request): JsonResponse {
-        // 验证请求数据
         $validated = $request->validate([
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
@@ -76,16 +102,18 @@ class ArticleController extends Controller
             'category' => 'nullable|string|max:100',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
-            'attachmentLink' => 'nullable|string|max:255'
+            'attachmentLink' => 'nullable|string|max:255',
+            'draftId' => 'nullable'
         ]);
         $validated['status'] = 'published';
-
+        Log::info("准备发布文章：", ['article' => $validated]);
         $res = $this->articleService->createArticle($validated);
 
         return response()->json($res['response'], $res['status']);
     }
 
     public function updateArticle(Request $request): JsonResponse {
+        Log::info("接收到的请求数据", ['data' => $request->all()]);
         $validated = $request->validate([
             'articleId' => 'required|exists:articles,id',
             'authorId' => 'required|exists:quanthub_users,id',
@@ -98,17 +126,18 @@ class ArticleController extends Controller
             'category' => 'nullable|string|max:100',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
-            'attachmentLink' => 'nullable|string|max:255'
+            'attachmentLink' => 'nullable|string|max:255',
+            'draftId' => 'nullable'
         ]);
+
+        Log::info("验证通过的数据", ['data' => $validated]);
 
         try {
             $res = $this->articleService->updateArticle($validated);
-            response()->json($res, 200);
-        } catch (\Exception $e) {
-            Log::error($e->getMessage());
+            return response()->json($res, 200);
+        } catch (Exception $e) {
+            Log::error("更新文章失败", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to update article', 'message' => $e->getMessage()], 500);
         }
-
-        return response()->json($this->articleService->updateArticle($validated), 200);
     }
 }

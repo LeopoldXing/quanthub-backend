@@ -46,7 +46,7 @@ class ElasticsearchService
             $query['bool']['must'][] = [
                 'multi_match' => [
                     'query' => $params['keyword'],
-                    'fields' => ['title^3', 'sub_title^2', 'content', 'author.username']
+                    'fields' => ['title^3', 'sub_title^2', 'content', 'author.username', 'tags']
                 ]
             ];
         }
@@ -60,13 +60,14 @@ class ElasticsearchService
             ];
         }
 
-        // Tag filter
+        // Tag filter``
         if (!empty($params['tagList'])) {
-            $query['bool']['filter'][] = [
+            $query['bool']['should'][] = [
                 'terms' => [
                     'tags' => $params['tagList']
                 ]
             ];
+            $query['bool']['minimum_should_match'] = 1;
         }
 
         // Content type filter

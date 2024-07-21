@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Like extends Model
 {
-    protected $fillable = ['user_id', 'article_id', 'created_by', 'updated_by'];
+    protected $fillable = ['user_id', 'article_id', 'type', 'created_by', 'updated_by'];
 
     public function user() {
         return $this->belongsTo(QuanthubUser::class, 'user_id');
