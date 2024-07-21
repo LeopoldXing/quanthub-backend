@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Services\ArticleService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ArticleController extends Controller
 {
-    protected $articleService;
+    protected ArticleService $articleService;
 
     public function __construct(ArticleService $articleService) {
         $this->articleService = $articleService;
@@ -18,9 +19,9 @@ class ArticleController extends Controller
      * search article based on conditions
      *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
-    public function searchArticles(Request $request) {
+    public function searchArticles(Request $request): JsonResponse {
         $validated = $request->validate([
             'keyword' => 'nullable|string|max:255',
             'categoryList' => 'nullable|array',
@@ -36,7 +37,33 @@ class ArticleController extends Controller
         return response()->json($res, 200);
     }
 
-    public function publishArticle(Request $request) {
+    /**
+     * get article by id
+     *
+     * @param $id
+     * @return JsonResponse
+     */
+    public function getArticle($id): JsonResponse {
+        try {
+            return response()->json($this->articleService->getArticleById($id), 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to get article', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Failed to get article', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+
+    /**
+     * delete article by id
+     *
+     * @param $id
+     * @return void
+     */
+    public function deleteArticle($id): void {
+        $this->articleService->deleteArticle($id);
+    }
+
+    public function publishArticle(Request $request): JsonResponse {
         // 验证请求数据
         $validated = $request->validate([
             'authorId' => 'required|exists:quanthub_users,id',
@@ -58,7 +85,7 @@ class ArticleController extends Controller
         return response()->json($res['response'], $res['status']);
     }
 
-    public function updateArticle(Request $request) {
+    public function updateArticle(Request $request): JsonResponse {
         $validated = $request->validate([
             'articleId' => 'required|exists:articles,id',
             'authorId' => 'required|exists:quanthub_users,id',
@@ -84,18 +111,4 @@ class ArticleController extends Controller
 
         return response()->json($this->articleService->updateArticle($validated), 200);
     }
-
-    public function getArticle($id) {
-        try {
-            return response()->json($this->articleService->getArticleById($id), 200);
-        } catch (\Exception $e) {
-            Log::error('Failed to get article', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Failed to get article', 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function deleteArticle($id) {
-        $this->articleService->deleteArticle($id);
-    }
-
 }

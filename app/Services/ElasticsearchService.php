@@ -2,13 +2,24 @@
 
 namespace App\Services;
 
+use Elastic\Elasticsearch\Client;
 use Elastic\Elasticsearch\ClientBuilder;
+use Elastic\Elasticsearch\Exception\AuthenticationException;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
+use Elastic\Elasticsearch\Exception\MissingParameterException;
+use Elastic\Elasticsearch\Exception\ServerResponseException;
+use Elastic\Elasticsearch\Response\Elasticsearch;
+use Exception;
+use Http\Promise\Promise;
 use Illuminate\Support\Facades\Log;
 
 class ElasticsearchService
 {
-    protected $client;
+    protected Client $client;
 
+    /**
+     * @throws AuthenticationException
+     */
     public function __construct() {
         $hosts = config('services.elasticsearch.hosts');  // Ensure this returns a string
         $this->client = ClientBuilder::create()->setHosts([$hosts])->build();
@@ -19,10 +30,10 @@ class ElasticsearchService
      *
      * @param $params
      * @return array
-     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
-     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     * @throws ClientResponseException
+     * @throws ServerResponseException
      */
-    public function conditionalSearch($params) {
+    public function conditionalSearch($params): array {
         $query = [
             'bool' => [
                 'must' => [],
@@ -97,7 +108,7 @@ class ElasticsearchService
      * @param $params
      * @return array|array[]
      */
-    private function buildSortParams($params) {
+    private function buildSortParams($params): array {
         $sort = [];
         if (!empty($params['sortStrategy']) && $params['sortDirection'] !== 'none') {
             $direction = $params['sortDirection'] ?? 'desc'; // Default to descending
@@ -123,7 +134,7 @@ class ElasticsearchService
      * @param $articleData
      * @return array
      */
-    private function constructParamsForCreateArticles($articleData) {
+    private function constructParamsForCreateArticles($articleData): array {
         return [
             'index' => 'quanthub-articles',
             'id' => $articleData['id'],
@@ -151,7 +162,7 @@ class ElasticsearchService
      * @param $articleData
      * @return array
      */
-    private function constructParamsForUpdateArticles($articleData) {
+    private function constructParamsForUpdateArticles($articleData): array {
         return [
             'index' => 'quanthub-articles',
             'id' => $articleData['id'],
@@ -179,12 +190,12 @@ class ElasticsearchService
      * create new document in "quanthub-articles" index
      *
      * @param $articleData
-     * @return \Elastic\Elasticsearch\Response\Elasticsearch|\Http\Promise\Promise
-     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
-     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
-     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     * @return Elasticsearch|Promise
+     * @throws ClientResponseException
+     * @throws MissingParameterException
+     * @throws ServerResponseException
      */
-    public function createArticleDoc($articleData) {
+    public function createArticleDoc($articleData): Elasticsearch|Promise {
         Log::info("Indexing article with ID: {$articleData['id']}");
         Log::info("Author data: " . json_encode($articleData['author']));
         return $this->client->index($this->constructParamsForCreateArticles($articleData));
@@ -194,12 +205,12 @@ class ElasticsearchService
      * update existing document in "quanthub-articles" index
      *
      * @param $articleData
-     * @return \Elastic\Elasticsearch\Response\Elasticsearch|\Http\Promise\Promise
-     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
-     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
-     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     * @return Elasticsearch|Promise
+     * @throws ClientResponseException
+     * @throws MissingParameterException
+     * @throws ServerResponseException
      */
-    public function updateArticleDoc($articleData) {
+    public function updateArticleDoc($articleData): Elasticsearch|Promise {
         return $this->client->update($this->constructParamsForUpdateArticles($articleData));
     }
 
@@ -208,16 +219,15 @@ class ElasticsearchService
      *
      * @param $index
      * @param $id
-     * @return array|\Elastic\Elasticsearch\Response\Elasticsearch|\Http\Promise\Promise
+     * @return array|Elasticsearch|Promise
      */
-    public function deleteArticleById($index, $id) {
+    public function deleteArticleById($index, $id): Elasticsearch|Promise|array {
         try {
-            $response = $this->client->delete([
+            return $this->client->delete([
                 'index' => $index,
                 'id' => $id
-            ]);
-            return $response;  // You might want to return a more user-friendly message or result
-        } catch (\Exception $e) {
+            ]);  // You might want to return a more user-friendly message or result
+        } catch (Exception $e) {
             // Handle other possible exceptions
             return ['error' => 'Error deleting document', 'message' => $e->getMessage()];
         }
@@ -227,11 +237,11 @@ class ElasticsearchService
      * create mapping for index "quanthub-articles"
      *
      * @return void
-     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
-     * @throws \Elastic\Elasticsearch\Exception\MissingParameterException
-     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     * @throws ClientResponseException
+     * @throws MissingParameterException
+     * @throws ServerResponseException
      */
-    public function createArticleIndex() {
+    public function createArticleIndex(): void {
         $params = [
             'index' => 'quanthub-articles',
             'body' => [

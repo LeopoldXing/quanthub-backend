@@ -10,16 +10,19 @@ use Illuminate\Support\Facades\Log;
 
 class ArticleService
 {
-    protected $elasticsearch;
-    protected $categoryService;
-    protected $tagService;
+    protected ElasticsearchService $elasticsearch;
+    protected CategoryService $categoryService;
+    protected TagService $tagService;
+    protected CommentService $commentService;
 
     public function __construct(ElasticsearchService $elasticsearch,
                                 CategoryService      $categoryService,
-                                TagService           $tagService) {
+                                TagService           $tagService,
+                                CommentService       $commentService) {
         $this->elasticsearch = $elasticsearch;
         $this->categoryService = $categoryService;
         $this->tagService = $tagService;
+        $this->commentService = $commentService;
     }
 
     /**
@@ -28,13 +31,14 @@ class ArticleService
      * @param $condition
      * @return array
      */
-    public function searchArticles($condition) {
+    public function searchArticles($condition): array {
         try {
             $res = $this->elasticsearch->conditionalSearch($condition);
             $articleOverview = [];
             foreach ($res as $item) {
-                $currentArticle = $this->getArticleById($item['id']);
-                $currentArticle['commentsCount'] = $currentArticle['comments']->count();
+                $articleId = $item['id'];
+                $currentArticle = $this->getArticleById($articleId);
+                $currentArticle['commentsCount'] = count($currentArticle['comments']);
                 $description = $item['source']['content'];
                 if (strlen($description) > 350) {
                     $description = substr($description, 0, 350) . '...';
@@ -42,6 +46,7 @@ class ArticleService
                 $currentArticle['description'] = $description;
                 $articleOverview[] = $currentArticle;
             }
+
             return $articleOverview;
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());
@@ -56,7 +61,7 @@ class ArticleService
      * @param $data
      * @return array
      */
-    public function createArticle($data) {
+    public function createArticle($data): array {
         DB::beginTransaction();
 
         try {
@@ -137,7 +142,7 @@ class ArticleService
                     'id' => (string)$author->id,
                     'username' => $author->username,
                     'role' => $author->role,
-                    'avatarLink' => $author->avatarLink
+                    'avatarLink' => $author->avatar_link
                 ],
                 'publishTimestamp' => (int)$article->created_at->timestamp,
                 'updateTimestamp' => (int)$article->updated_at->timestamp,
@@ -219,10 +224,9 @@ class ArticleService
      * @param $id numeric
      * @return array response
      */
-    public function getArticleById($id) {
-        $article = Article::with(['author', 'comments', 'likes', 'tags'])->findOrFail($id);
+    public function getArticleById(float|int|string $id): array {
+        $article = Article::with(['author', 'likes', 'tags'])->findOrFail($id);
         $author = $article->author;
-        $comments = $article->comments ? $article->comments : [];
         $likes = $article->likes ? $article->likes : [];
         $isLiking = false;
         foreach ($likes as $like) {
@@ -242,8 +246,10 @@ class ArticleService
             );
         }
 
+        $commentData = $this->commentService->getCommentsByArticleId($article->id)['data'];
+
         $response = [
-            'id' => (string)$article->id,
+            'id' => $id,
             'title' => $article->title,
             'subtitle' => $article->sub_title,
             'tags' => $tags ? $tags->map(function ($tag) {
@@ -254,20 +260,7 @@ class ArticleService
             'coverImageLink' => $article->cover_image_link,
             'rate' => 0,
             'type' => $article->type,
-            'comments' => $comments->map(function ($comment, $author) {
-                return ['id' => $comment->id,
-                    'articleId' => $comment->article_id,
-                    'content' => $comment->content,
-                    'user' => [
-                        'id' => $author->id,
-                        'auth0Id' => $author->auth0Id,
-                        'username' => $author->username,
-                        'role' => $author->role,
-                        'avatarLink' => $author->avatarLink],
-                    'publishTillToday' => '3 days ago',
-                    'status' => 'normal'
-                ];
-            }),
+            'comments' => $commentData,
             'likes' => $likes,
             'isLiking' => $isLiking,
             'views' => 1,
@@ -275,7 +268,7 @@ class ArticleService
                 'id' => $article->author->id,
                 'username' => $article->author->username,
                 'role' => $article->author->role,
-                'avatarLink' => $article->author->avatarLink
+                'avatarLink' => $article->author->avatar_link
             ],
             'publishTimestamp' => (int)$article->created_at->timestamp,
             'updateTimestamp' => (int)$article->updated_at->timestamp,
@@ -291,7 +284,7 @@ class ArticleService
      * @param $id
      * @return void
      */
-    public function deleteArticle($id) {
+    public function deleteArticle($id): void {
         Article::destroy($id);
         $this->elasticsearch->deleteArticleById('quanthub-articles', $id);
     }

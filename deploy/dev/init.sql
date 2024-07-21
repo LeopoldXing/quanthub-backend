@@ -8,19 +8,19 @@ use
 CREATE TABLE `quanthub_users`
 (
     `id`           bigint unsigned NOT NULL AUTO_INCREMENT,
-    `auth0Id`      varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-    `username`     varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-    `password`     varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `email`        varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `phone_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `role`         varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `avatarLink`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `created_by`   varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `updated_by`   varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `auth0_id`     varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `username`     varchar(100) COLLATE utf8mb4_general_ci                       NOT NULL,
+    `password`     varchar(100) COLLATE utf8mb4_general_ci                       DEFAULT NULL,
+    `email`        varchar(100) COLLATE utf8mb4_general_ci                       DEFAULT NULL,
+    `phone_number` varchar(100) COLLATE utf8mb4_general_ci                       DEFAULT NULL,
+    `role`         varchar(100) COLLATE utf8mb4_general_ci                       DEFAULT NULL,
+    `avatar_link`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `created_by`   varchar(100) COLLATE utf8mb4_general_ci                       DEFAULT NULL,
+    `updated_by`   varchar(100) COLLATE utf8mb4_general_ci                       DEFAULT NULL,
     `created_at`   timestamp NULL DEFAULT NULL,
     `updated_at`   timestamp NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `quanthub_users_auth0id_unique` (`auth0Id`)
+    UNIQUE KEY `quanthub_users_auth0_id_unique` (`auth0_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- quanthub.categories definition
