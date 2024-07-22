@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Services\DraftService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DraftController
 {
@@ -13,7 +15,7 @@ class DraftController
         $this->draftService = $draftService;
     }
 
-    public function createDraft(Request $request) {
+    public function createDraft(Request $request): JsonResponse {
         $validated = $request->validate([
             'id' => 'nullable',
             'authorId' => 'required|exists:quanthub_users,id',
@@ -21,6 +23,7 @@ class DraftController
             'subTitle' => 'nullable|string|max:255',
             'type' => 'required|string',
             'contentHtml' => 'required|string',
+            'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:100',
             'tags' => 'nullable|array',
@@ -30,15 +33,15 @@ class DraftController
         ]);
         $validated['status'] = 'draft';
 
+        Log::info("准备创建/更新草稿：", ['data' => $validated]);
+
         $res = $this->draftService->saveDraft($validated);
 
         return response()->json($res['data'], $res['status']);
     }
 
-    public function getDraftByArticleId($articleId) {
+    public function getDraftByArticleId($articleId): JsonResponse {
         $res = $this->draftService->getDraftByArticleId($articleId);
         return response()->json($res['data'], $res['status']);
     }
-
-    public function updateDraft(Request $request, $id) {}
 }

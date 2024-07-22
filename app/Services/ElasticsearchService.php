@@ -152,7 +152,8 @@ class ElasticsearchService
                 'cover_image_link' => $articleData['cover_image_link'],
                 'attachment_link' => $articleData['attachment_link'],
                 'created_by' => $articleData['created_by'],
-                'updated_by' => $articleData['updated_by']
+                'updated_by' => $articleData['updated_by'],
+                'updated_at' => now()
             ]
         ];
     }
@@ -181,7 +182,8 @@ class ElasticsearchService
                     'cover_image_link' => $articleData['cover_image_link'],
                     'attachment_link' => $articleData['attachment_link'],
                     'created_by' => $articleData['created_by'],
-                    'updated_by' => $articleData['updated_by']
+                    'updated_by' => $articleData['updated_by'],
+                    'updated_at' => now()
                 ]
             ]
         ];
@@ -291,10 +293,6 @@ class ElasticsearchService
                         'status' => [
                             'type' => 'keyword',
                         ],
-                        'publish_date' => [
-                            'type' => 'date',
-                            'format' => 'strict_date_optional_time||epoch_millis'
-                        ],
                         'cover_image_link' => [
                             'type' => 'keyword',
                             'index' => false
@@ -310,6 +308,14 @@ class ElasticsearchService
                         'updated_by' => [
                             'type' => 'keyword',
                             'index' => false
+                        ],
+                        'publish_date' => [
+                            'type' => 'date',
+                            'format' => 'strict_date_optional_time||epoch_millis'
+                        ],
+                        'updated_at' => [
+                            'type' => 'date',
+                            'format' => 'strict_date_optional_time||epoch_millis'
                         ]
                     ]
                 ]

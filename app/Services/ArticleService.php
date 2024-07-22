@@ -134,6 +134,7 @@ class ArticleService
             /*  delete related draft  */
             if (isset($data['draftId'])) {
                 Article::destroy($data['draftId']);
+                $this->elasticsearch->deleteArticleById('quanthub-articles', $data['draftId']);
             }
 
             // prepare response
@@ -225,6 +226,7 @@ class ArticleService
             /*  delete related draft  */
             if (isset($articleData['draftId'])) {
                 Article::destroy($articleData['draftId']);
+                $this->elasticsearch->deleteArticleById('quanthub-articles', $data['draftId']);
             }
 
             return $this->getArticleById($article->id);

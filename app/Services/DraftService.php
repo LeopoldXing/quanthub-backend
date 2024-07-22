@@ -15,13 +15,16 @@ class DraftService
     protected CategoryService $categoryService;
     protected TagService $tagService;
     protected CommentService $commentService;
+    protected ElasticsearchService $elasticsearchService;
 
-    public function __construct(CategoryService $categoryService,
-                                TagService      $tagService,
-                                CommentService  $commentService) {
+    public function __construct(CategoryService      $categoryService,
+                                TagService           $tagService,
+                                CommentService       $commentService,
+                                ElasticsearchService $elasticsearchService) {
         $this->categoryService = $categoryService;
         $this->tagService = $tagService;
         $this->commentService = $commentService;
+        $this->elasticsearchService = $elasticsearchService;
     }
 
     public function saveDraft($data) {
@@ -78,6 +81,10 @@ class DraftService
             Log::error('Failed to get draft', ['error' => $e->getMessage()]);
             return ['data' => ['error' => 'Failed to get draft', 'message' => $e->getMessage()]];
         }
+    }
+
+    public function deleteDraft($draftId): void {
+        Article::find($draftId)->delete();
     }
 
     private function constructDraftResponse($draft): array {
@@ -162,7 +169,35 @@ class DraftService
         ]);
 
         // link tags and this draft
-        $this->tagService->connectTagsToArticle($data['tags'], $article->id, $author->id);
+        $tagList = $this->tagService->connectTagsToArticle($data['tags'], $article->id, $author->id);
+        $tagNameList = [];
+        foreach ($tagList as $tag) {
+            $tagNameList[] = $tag->name;
+        }
+
+        // add to elasticsearch
+        $this->elasticsearchService->createArticleDoc([
+            'index' => 'quanthub-articles',
+            'id' => $article->id,
+            'author' => [
+                'id' => $author->id,
+                'username' => $author->username,
+                'email' => $author->email,
+                'role' => $author->role
+            ],
+            'title' => $article->title,
+            'sub_title' => $article->sub_title,
+            'content' => $data['contentText'],
+            'type' => $article->type,
+            'category' => $category->name,
+            'tags' => $tagNameList,
+            'status' => $data['status'] ?? 'published',
+            'publish_date' => now(),
+            'cover_image_link' => $data['coverImageLink'] ?? null,
+            'attachment_link' => $data['attachmentLink'] ?? null,
+            'created_by' => $author->id,
+            'updated_by' => $author->id
+        ]);
 
         DB::commit();
 
