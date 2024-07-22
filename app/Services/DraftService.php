@@ -87,7 +87,7 @@ class DraftService
         Article::find($draftId)->delete();
     }
 
-    private function constructDraftResponse($draft): array {
+    public function constructDraftResponse($draft): array {
         $author = $draft->author;
         $tags = $draft->tags ? $draft->tags : [];
         if (!empty($draft->category)) {
@@ -204,7 +204,7 @@ class DraftService
         return $article;
     }
 
-    private function getDraftById($id) {
+    public function getDraftById($id) {
         $draft = Article::with('category', 'tags', 'author')->findOrFail($id);
         return $draft;
     }

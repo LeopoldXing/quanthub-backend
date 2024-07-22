@@ -169,11 +169,16 @@ class ArticleService
         }
     }
 
-    public function updateArticle($articleData) {
+    public function updateArticle($articleData): ?array {
         DB::beginTransaction();
 
         try {
-            $article = Article::with(['author'])->findOrFail($articleData['articleId']);
+            if ($articleData['type'] === 'draft') {
+                $draft = Article::with(['author'])->findOrFail($articleData['draftId']);
+                $article = Article::with(['author'])->findOrFail($draft->draft_reference_id);
+            } else {
+                $article = Article::with(['author'])->findOrFail($articleData['articleId']);
+            }
 
             // save new category
             $category = $this->categoryService->saveCategory($articleData['category'], $article->id);
@@ -226,7 +231,7 @@ class ArticleService
             /*  delete related draft  */
             if (isset($articleData['draftId'])) {
                 Article::destroy($articleData['draftId']);
-                $this->elasticsearch->deleteArticleById('quanthub-articles', $data['draftId']);
+                $this->elasticsearch->deleteArticleById('quanthub-articles', $articleData['draftId']);
             }
 
             return $this->getArticleById($article->id);

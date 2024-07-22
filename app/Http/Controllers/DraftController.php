@@ -44,4 +44,9 @@ class DraftController
         $res = $this->draftService->getDraftByArticleId($articleId);
         return response()->json($res['data'], $res['status']);
     }
+
+    public function getDraftById($draftId): JsonResponse {
+        $res = $this->draftService->getDraftById($draftId);
+        return response()->json($this->draftService->constructDraftResponse($res), 200);
+    }
 }
