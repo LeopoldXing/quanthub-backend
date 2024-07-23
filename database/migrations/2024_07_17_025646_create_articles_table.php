@@ -21,6 +21,7 @@ class CreateArticlesTable extends Migration
             $table->string('cover_image_link', 255)->nullable();
             $table->date('publish_date')->nullable();
             $table->string('attachment_link', 255)->nullable();
+            $table->string('attachment_name', 255)->nullable();
             $table->string('created_by', 100)->nullable();
             $table->string('updated_by', 100)->nullable();
             $table->timestamps();

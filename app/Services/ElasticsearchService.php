@@ -151,6 +151,7 @@ class ElasticsearchService
                 'publish_date' => $articleData['publish_date'],
                 'cover_image_link' => $articleData['cover_image_link'],
                 'attachment_link' => $articleData['attachment_link'],
+                'attachment_name' => $articleData['attachment_name'],
                 'created_by' => $articleData['created_by'],
                 'updated_by' => $articleData['updated_by'],
                 'updated_at' => now()
@@ -181,6 +182,7 @@ class ElasticsearchService
                     'publish_date' => $articleData['publish_date'],
                     'cover_image_link' => $articleData['cover_image_link'],
                     'attachment_link' => $articleData['attachment_link'],
+                    'attachment_name' => $articleData['attachment_name'],
                     'created_by' => $articleData['created_by'],
                     'updated_by' => $articleData['updated_by'],
                     'updated_at' => now()
@@ -298,6 +300,10 @@ class ElasticsearchService
                             'index' => false
                         ],
                         'attachment_link' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'attachment_name' => [
                             'type' => 'keyword',
                             'index' => false
                         ],

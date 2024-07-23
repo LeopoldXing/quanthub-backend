@@ -29,7 +29,8 @@ class DraftController
             'category' => 'nullable|string',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
-            'attachmentLink' => 'nullable',
+            'attachmentLink' => 'nullable|string|max:255',
+            'attachmentName' => 'nullable|string|max:255',
             'referenceId' => 'nullable'
         ]);
         $validated['status'] = 'draft';

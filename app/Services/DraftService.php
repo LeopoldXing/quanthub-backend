@@ -8,7 +8,6 @@ use App\Models\QuanthubUser;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use function PHPUnit\Framework\isEmpty;
 
 class DraftService
 {
@@ -121,6 +120,8 @@ class DraftService
                 'role' => $draft->author->role,
                 'avatarLink' => $draft->author->avatar_link
             ],
+            'attachmentName' => $draft->attachment_name,
+            'attachmentLink' => $draft->attachment_link,
             'referenceId' => $draft->draft_reference_id,
             'draftId' => $draft->id,
             'publishTimestamp' => (int)$draft->created_at->timestamp,
@@ -163,6 +164,7 @@ class DraftService
             'type' => 'draft',
             'cover_image_link' => $data['coverImageLink'] ?? null,
             'attachment_link' => $data['attachmentLink'] ?? null,
+            'attachment_name' => $data['attachmentName'] ?? null,
             'draft_reference_id' => $data['referenceId'] ?? null,
             'created_by' => $author->id,
             'updated_by' => $author->id
@@ -195,6 +197,7 @@ class DraftService
             'publish_date' => now(),
             'cover_image_link' => $data['coverImageLink'] ?? null,
             'attachment_link' => $data['attachmentLink'] ?? null,
+            'attachment_name' => $data['attachmentName'] ?? null,
             'created_by' => $author->id,
             'updated_by' => $author->id
         ]);
@@ -228,6 +231,7 @@ class DraftService
             'category_id' => $category->id,
             'cover_image_link' => $data['coverImageLink'] ?? null,
             'attachment_link' => $data['attachmentLink'] ?? null,
+            'attachment_name' => $data['attachmentName'] ?? null,
             'updated_by' => $data['authorId']
         ]);
 

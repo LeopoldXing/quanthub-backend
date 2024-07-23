@@ -91,6 +91,7 @@ class ArticleService
                 'publish_date' => now(),
                 'cover_image_link' => $data['coverImageLink'] ?? null,
                 'attachment_link' => $data['attachmentLink'] ?? null,
+                'attachment_name' => $data['attachmentName'] ?? null,
                 'draft_reference_id' => $data['referenceId'] ?? null,
                 'created_by' => $author->id,
                 'updated_by' => $author->id
@@ -124,6 +125,7 @@ class ArticleService
                     'publish_date' => now(),
                     'cover_image_link' => $data['coverImageLink'] ?? null,
                     'attachment_link' => $data['attachmentLink'] ?? null,
+                    'attachment_name' => $data['attachmentName'] ?? null,
                     'created_by' => $author->id,
                     'updated_by' => $author->id
                 ]);
@@ -156,6 +158,8 @@ class ArticleService
                     'role' => $author->role,
                     'avatarLink' => $author->avatar_link
                 ],
+                'attachmentLink' => $article->attachment_link,
+                'attachmentName' => $article->attachment_name,
                 'publishTimestamp' => (int)$article->created_at->timestamp,
                 'updateTimestamp' => (int)$article->updated_at->timestamp,
                 'publishTillToday' => 'a few seconds ago'
@@ -190,6 +194,7 @@ class ArticleService
                 'category_id' => $category->id,
                 'cover_image_link' => $articleData['coverImageLink'] ?? null,
                 'attachment_link' => $articleData['attachmentLink'] ?? null,
+                'attachment_name' => $articleData['attachmentName'] ?? null,
                 'updated_by' => $articleData['authorId']
             ]);
 
@@ -221,6 +226,7 @@ class ArticleService
                 'publish_date' => $articleData['publishDate'] ?? now(),
                 'cover_image_link' => $articleData['coverImageLink'] ?? null,
                 'attachment_link' => $articleData['attachmentLink'] ?? null,
+                'attachment_name' => $articleData['attachmentName'] ?? null,
                 'created_by' => $article->author->id,
                 'updated_by' => $article->author->id
             ]);
@@ -294,11 +300,15 @@ class ArticleService
                 'role' => $article->author->role,
                 'avatarLink' => $article->author->avatar_link
             ],
+            'attachmentName' => $article->attachment_name,
+            'attachmentLink' => $article->attachment_link,
             'publishTimestamp' => (int)$article->created_at->timestamp,
             'updateTimestamp' => (int)$article->updated_at->timestamp,
             'publishTillToday' => '3 days ago',
             'updateTillToday' => 'yesterday'
         ];
+
+        Log::info("找到的文章数据：", ['articleData' => $response]);
 
         return $response;
     }

@@ -103,6 +103,7 @@ class ArticleController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
             'attachmentLink' => 'nullable|string|max:255',
+            'attachmentName' => 'nullable|string|max:255',
             'draftId' => 'nullable'
         ]);
         $validated['status'] = 'published';
@@ -113,7 +114,6 @@ class ArticleController extends Controller
     }
 
     public function updateArticle(Request $request): JsonResponse {
-        Log::info("接收到的请求数据", ['data' => $request->all()]);
         $validated = $request->validate([
             'articleId' => 'required|exists:articles,id',
             'authorId' => 'required|exists:quanthub_users,id',
@@ -127,6 +127,7 @@ class ArticleController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
             'attachmentLink' => 'nullable|string|max:255',
+            'attachmentName' => 'nullable|string|max:255',
             'draftId' => 'nullable'
         ]);
 
@@ -136,7 +137,7 @@ class ArticleController extends Controller
             $res = $this->articleService->updateArticle($validated);
             return response()->json($res, 200);
         } catch (Exception $e) {
-            Log::error("更新文章失败", ['error' => $e->getMessage()]);
+            Log::error("update article failed", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Failed to update article', 'message' => $e->getMessage()], 500);
         }
     }
