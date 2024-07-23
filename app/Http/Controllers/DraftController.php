@@ -16,20 +16,21 @@ class DraftController
     }
 
     public function createDraft(Request $request): JsonResponse {
+        Log::info("接受的草稿数据：", ['request' => $request]);
         $validated = $request->validate([
             'id' => 'nullable',
             'authorId' => 'required|exists:quanthub_users,id',
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'subTitle' => 'nullable|string|max:255',
             'type' => 'required|string',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
-            'category' => 'nullable|string|max:100',
+            'category' => 'nullable|string',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
-            'attachmentLink' => 'nullable|string|max:255',
-            'referenceId' => 'nullable|string|max:255'
+            'attachmentLink' => 'nullable',
+            'referenceId' => 'nullable'
         ]);
         $validated['status'] = 'draft';
 
