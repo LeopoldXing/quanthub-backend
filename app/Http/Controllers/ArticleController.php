@@ -91,11 +91,13 @@ class ArticleController extends Controller
      * @return JsonResponse
      */
     public function publishArticle(Request $request): JsonResponse {
+        Log::info("发布文章接收到的数据:", ['articleData' => $request]);
         $validated = $request->validate([
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
             'type' => 'required|in:article,announcement,draft',
+            'isAnnouncement' => 'nullable',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
@@ -120,6 +122,7 @@ class ArticleController extends Controller
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
             'type' => 'required|in:article,announcement,draft',
+            'isAnnouncement' => 'nullable|boolean',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',

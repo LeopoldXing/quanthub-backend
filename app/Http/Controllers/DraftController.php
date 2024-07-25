@@ -23,6 +23,7 @@ class DraftController
             'title' => 'nullable|string|max:255',
             'subTitle' => 'nullable|string|max:255',
             'type' => 'required|string',
+            'isAnnouncement' => 'nullable|boolean',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
