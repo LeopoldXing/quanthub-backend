@@ -52,4 +52,9 @@ class DraftController
         $res = $this->draftService->getDraftById($draftId);
         return response()->json($this->draftService->constructDraftResponse($res), 200);
     }
+
+    public function deleteDraft($draftId): JsonResponse {
+        $this->draftService->deleteDraft($draftId);
+        return response()->json(null, 204);
+    }
 }

@@ -84,6 +84,9 @@ class DraftService
 
     public function deleteDraft($draftId): void {
         Article::find($draftId)->delete();
+
+        // delete from elasticsearch
+        $this->elasticsearchService->deleteArticleById('quanthub-articles', $draftId);
     }
 
     public function constructDraftResponse($draft): array {

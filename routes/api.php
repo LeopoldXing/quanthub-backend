@@ -21,6 +21,7 @@ Route::delete('/article/{id}', [ArticleController::class, 'deleteArticle']);
 Route::post('/draft/create', [DraftController::class, 'createDraft']);
 Route::get('/draft/article/{articleId}', [DraftController::class, 'getDraftByArticleId']);
 Route::get('/draft/get/{draftId}', [DraftController::class, 'getDraftById']);
+Route::delete('/draft/delete/{draftId}', [DraftController::class, 'deleteDraft']);
 
 Route::get('/tag/{number}', [TagController::class, 'shuffleTags']);
 
