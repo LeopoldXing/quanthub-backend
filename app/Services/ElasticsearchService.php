@@ -11,7 +11,6 @@ use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Elastic\Elasticsearch\Response\Elasticsearch;
 use Exception;
 use Http\Promise\Promise;
-use Illuminate\Support\Facades\Log;
 
 class ElasticsearchService
 {
@@ -236,8 +235,6 @@ class ElasticsearchService
      * @throws ServerResponseException
      */
     public function createArticleDoc($articleData): Elasticsearch|Promise {
-        Log::info("Indexing article with ID: {$articleData['id']}");
-        Log::info("Author data: " . json_encode($articleData['author']));
         return $this->client->index($this->constructParamsForCreateArticles($articleData));
     }
 

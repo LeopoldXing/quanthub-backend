@@ -24,6 +24,7 @@ Route::get('/draft/get/{draftId}', [DraftController::class, 'getDraftById']);
 Route::delete('/draft/delete/{draftId}', [DraftController::class, 'deleteDraft']);
 
 Route::get('/tag/{number}', [TagController::class, 'shuffleTags']);
+Route::get('/my/tags/{number}/{userId}', [TagController::class, 'getMyTags']);
 
 Route::get('/comment/get/{articleId}', [CommentController::class, 'getCommentsByArticleId']);
 Route::post('/comment/create', [CommentController::class, 'addComment']);

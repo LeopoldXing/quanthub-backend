@@ -45,7 +45,6 @@ class ArticleController extends Controller
      * @throws ValidationException
      */
     public function searchArticles(Request $request): JsonResponse {
-        Log::info("接受的搜索条件：", ['request' => $request]);
         // Extract and parse categoryList from the query string
         $categoryList = $request->input('categoryList');
         if (!is_array($categoryList)) {
