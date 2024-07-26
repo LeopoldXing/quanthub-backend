@@ -42,7 +42,7 @@ class ElasticsearchService
         ];
 
         // Keyword search
-        if (!empty($params['keyword'])) {
+        if (!empty($params['keyword']) && strlen($params['keyword']) > 0) {
             $query['bool']['must'][] = [
                 'multi_match' => [
                     'query' => $params['keyword'],
@@ -55,23 +55,22 @@ class ElasticsearchService
         if (!empty($params['categoryList'])) {
             $query['bool']['filter'][] = [
                 'terms' => [
-                    'category' => $params['categoryList']
+                    'category.keyword' => $params['categoryList']
                 ]
             ];
         }
 
-        // Tag filter``
+        // Tag filter
         if (!empty($params['tagList'])) {
-            $query['bool']['should'][] = [
+            $query['bool']['filter'][] = [
                 'terms' => [
-                    'tags' => $params['tagList']
+                    'tags.keyword' => $params['tagList']
                 ]
             ];
-            $query['bool']['minimum_should_match'] = 1;
         }
 
         // Content type filter
-        if (!empty($params['type'])) {
+        if (!empty($params['type']) && $params['type'] !== 'all') {
             $query['bool']['filter'][] = [
                 'term' => [
                     'type' => $params['type']
@@ -79,9 +78,30 @@ class ElasticsearchService
             ];
         }
 
+        // Draft filter
+        if (isset($params['isDraft'])) {
+            $query['bool']['filter'][] = [
+                'term' => [
+                    'is_draft' => $params['isDraft']
+                ]
+            ];
+        }
+
+        // Determine the indices to search in
+        $indices = [];
+        if (isset($params['type'])) {
+            if ($params['type'] === 'article') {
+                $indices[] = 'quanthub-articles';
+            } elseif ($params['type'] === 'announcement') {
+                $indices[] = 'quanthub-announcements';
+            } elseif ($params['type'] === 'all') {
+                $indices = ['quanthub-articles', 'quanthub-announcements'];
+            }
+        }
+
         // Build the final query array
         $searchParams = [
-            'index' => 'quanthub-articles',
+            'index' => implode(',', $indices),
             'body' => [
                 'query' => $query,
                 'sort' => $this->buildSortParams($params)
@@ -100,8 +120,10 @@ class ElasticsearchService
             ];
         }
 
+        Log::info("查询结果：", ['result' => $results]);
         return $results;
     }
+
 
     /**
      * construct search param of sorting
@@ -112,7 +134,7 @@ class ElasticsearchService
     private function buildSortParams($params): array {
         $sort = [];
         if (!empty($params['sortStrategy']) && $params['sortDirection'] !== 'none') {
-            $direction = $params['sortDirection'] ?? 'desc'; // Default to descending
+            $direction = $params['sortDirection'] ?? 'desc';
             switch ($params['sortStrategy']) {
                 case 'publish_date':
                     $sort = ['publish_date' => ['order' => $direction]];
@@ -137,7 +159,7 @@ class ElasticsearchService
      */
     private function constructParamsForCreateArticles($articleData): array {
         return [
-            'index' => 'quanthub-articles',
+            'index' => $articleData['index'],
             'id' => $articleData['id'],
             'body' => [
                 'author' => $articleData['author'],
@@ -145,6 +167,7 @@ class ElasticsearchService
                 'sub_title' => $articleData['sub_title'],
                 'content' => $articleData['content'],
                 'type' => $articleData['type'],
+                'is_draft' => $articleData['is_draft'],
                 'status' => $articleData['status'],
                 'category' => $articleData['category'],
                 'tags' => $articleData['tags'],
@@ -154,7 +177,7 @@ class ElasticsearchService
                 'attachment_name' => $articleData['attachment_name'],
                 'created_by' => $articleData['created_by'],
                 'updated_by' => $articleData['updated_by'],
-                'updated_at' => now()
+                'updated_at' => now()->toIso8601String()
             ]
         ];
     }
@@ -167,26 +190,29 @@ class ElasticsearchService
      */
     private function constructParamsForUpdateArticles($articleData): array {
         return [
-            'index' => 'quanthub-articles',
+            'index' => $articleData['index'],
             'id' => $articleData['id'],
             'body' => [
-                'doc' => [
+                'doc' => array_filter([
                     'author' => $articleData['author'],
                     'title' => $articleData['title'],
                     'sub_title' => $articleData['sub_title'],
                     'content' => $articleData['content'],
                     'type' => $articleData['type'],
+                    'is_draft' => $articleData['is_draft'],
                     'status' => $articleData['status'],
                     'category' => $articleData['category'],
                     'tags' => $articleData['tags'],
                     'publish_date' => $articleData['publish_date'],
-                    'cover_image_link' => $articleData['cover_image_link'],
-                    'attachment_link' => $articleData['attachment_link'],
-                    'attachment_name' => $articleData['attachment_name'],
+                    'cover_image_link' => $articleData['cover_image_link'] ?? null,
+                    'attachment_link' => $articleData['attachment_link'] ?? null,
+                    'attachment_name' => $articleData['attachment_name'] ?? null,
                     'created_by' => $articleData['created_by'],
                     'updated_by' => $articleData['updated_by'],
-                    'updated_at' => now()
-                ]
+                    'updated_at' => now()->toIso8601String()
+                ], function ($value) {
+                    return !is_null($value);
+                })
             ]
         ];
     }
@@ -231,9 +257,8 @@ class ElasticsearchService
             return $this->client->delete([
                 'index' => $index,
                 'id' => $id
-            ]);  // You might want to return a more user-friendly message or result
+            ]);
         } catch (Exception $e) {
-            // Handle other possible exceptions
             return ['error' => 'Error deleting document', 'message' => $e->getMessage()];
         }
     }
@@ -249,6 +274,211 @@ class ElasticsearchService
     public function createArticleIndex(): void {
         $params = [
             'index' => 'quanthub-articles',
+            'body' => [
+                'settings' => [
+                    'number_of_shards' => 3,
+                    'number_of_replicas' => 1
+                ],
+                'mappings' => [
+                    'properties' => [
+                        'author' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'keyword'
+                                ],
+                                'username' => [
+                                    'type' => 'text'
+                                ],
+                                'email' => [
+                                    'type' => 'keyword'
+                                ],
+                                'role' => [
+                                    'type' => 'keyword',
+                                    'index' => false
+                                ]
+                            ]
+                        ],
+                        'title' => [
+                            'type' => 'text'
+                        ],
+                        'sub_title' => [
+                            'type' => 'text'
+                        ],
+                        'content' => [
+                            'type' => 'text'
+                        ],
+                        'category' => [
+                            'type' => 'keyword'
+                        ],
+                        'tags' => [
+                            'type' => 'keyword'
+                        ],
+                        'type' => [
+                            'type' => 'keyword'
+                        ],
+                        'is_draft' => [
+                            'type' => 'boolean'
+                        ],
+                        'status' => [
+                            'type' => 'keyword'
+                        ],
+                        'cover_image_link' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'attachment_link' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'attachment_name' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'created_by' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'updated_by' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'publish_date' => [
+                            'type' => 'date',
+                            'format' => 'strict_date_optional_time||epoch_millis'
+                        ],
+                        'updated_at' => [
+                            'type' => 'date',
+                            'format' => 'strict_date_optional_time||epoch_millis'
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        // Delete the index if it already exists
+        if ($this->client->indices()->exists(['index' => 'quanthub-articles'])) {
+            $this->client->indices()->delete(['index' => 'quanthub-articles']);
+        }
+
+        // Create the new index with the defined settings and mappings
+        $this->client->indices()->create($params);
+    }
+
+    /**
+     * create mapping for index "quanthub-announcements"
+     *
+     * @return void
+     * @throws ClientResponseException
+     * @throws MissingParameterException
+     * @throws ServerResponseException
+     */
+    public function createAnnouncementIndex(): void {
+        $params = [
+            'index' => 'quanthub-announcements',
+            'body' => [
+                'settings' => [
+                    'number_of_shards' => 3,
+                    'number_of_replicas' => 1
+                ],
+                'mappings' => [
+                    'properties' => [
+                        'author' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'id' => [
+                                    'type' => 'keyword'
+                                ],
+                                'username' => [
+                                    'type' => 'text'
+                                ],
+                                'email' => [
+                                    'type' => 'keyword'
+                                ],
+                                'role' => [
+                                    'type' => 'keyword',
+                                    'index' => false
+                                ]
+                            ]
+                        ],
+                        'title' => [
+                            'type' => 'text'
+                        ],
+                        'sub_title' => [
+                            'type' => 'text'
+                        ],
+                        'content' => [
+                            'type' => 'text'
+                        ],
+                        'category' => [
+                            'type' => 'keyword'
+                        ],
+                        'tags' => [
+                            'type' => 'keyword'
+                        ],
+                        'type' => [
+                            'type' => 'keyword',
+                        ],
+                        'is_draft' => [
+                            'type' => 'boolean'
+                        ],
+                        'status' => [
+                            'type' => 'keyword',
+                        ],
+                        'cover_image_link' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'attachment_link' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'attachment_name' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'created_by' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'updated_by' => [
+                            'type' => 'keyword',
+                            'index' => false
+                        ],
+                        'publish_date' => [
+                            'type' => 'date',
+                            'format' => 'strict_date_optional_time||epoch_millis'
+                        ],
+                        'updated_at' => [
+                            'type' => 'date',
+                            'format' => 'strict_date_optional_time||epoch_millis'
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        // Delete the index if it already exists
+        if ($this->client->indices()->exists(['index' => 'quanthub-announcements'])) {
+            $this->client->indices()->delete(['index' => 'quanthub-announcements']);
+        }
+
+        // Create the new index with the defined settings and mappings
+        $this->client->indices()->create($params);
+    }
+
+
+    /**
+     * create mapping for index "quanthub-logs"
+     *
+     * @return void
+     * @throws ClientResponseException
+     * @throws MissingParameterException
+     * @throws ServerResponseException
+     */
+    /*public function createLogIndex(): void {
+        $params = [
+            'index' => 'quanthub-logs',
             'body' => [
                 'settings' => [
                     'number_of_shards' => 3,
@@ -329,11 +559,11 @@ class ElasticsearchService
         ];
 
         // Delete the index if it already exists
-        if ($this->client->indices()->exists(['index' => 'quanthub-articles'])) {
-            $this->client->indices()->delete(['index' => 'quanthub-articles']);
+        if ($this->client->indices()->exists(['index' => 'quanthub-logs'])) {
+            $this->client->indices()->delete(['index' => 'quanthub-logs']);
         }
 
         // Create the new index with the defined settings and mappings
         $this->client->indices()->create($params);
-    }
+    }*/
 }

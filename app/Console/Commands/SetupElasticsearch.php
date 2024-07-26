@@ -21,6 +21,7 @@ class SetupElasticsearch extends Command
     public function handle(): void {
         $elasticsearchService = new ElasticsearchService();
         $elasticsearchService->createArticleIndex();
+        $elasticsearchService->createAnnouncementIndex();
         $this->info('Elasticsearch indices have been set up successfully.');
     }
 }

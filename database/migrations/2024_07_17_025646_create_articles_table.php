@@ -17,7 +17,7 @@ class CreateArticlesTable extends Migration
             $table->decimal('rate', 3, 1)->nullable();
             $table->string('status', 100)->nullable();
             $table->string('type', 100)->nullable();
-            $table->tinyInteger('is_announcement')->default(0);
+            $table->boolean('is_draft')->default(false);
             $table->unsignedBigInteger('draft_reference_id')->nullable();
             $table->string('cover_image_link', 255)->nullable();
             $table->date('publish_date')->nullable();

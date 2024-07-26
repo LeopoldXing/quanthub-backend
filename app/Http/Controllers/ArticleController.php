@@ -46,7 +46,8 @@ class ArticleController extends Controller
             'keyword' => 'nullable|string|max:255',
             'categoryList' => 'nullable|array',
             'categoryList.*' => 'string|max:100',
-            'type' => 'nullable|string|in:article,announcement,draft',
+            'type' => 'required|string|in:article,announcement,all',
+            'isDraft' => 'required',
             'tagList' => 'nullable|array',
             'tagList.*' => 'string|max:100',
             'sortStrategy' => 'nullable|in:publish_date,update_date,recommended',
@@ -90,14 +91,15 @@ class ArticleController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function publishArticle(Request $request): JsonResponse {
+    public function createArticle(Request $request): JsonResponse {
         Log::info("发布文章接收到的数据:", ['articleData' => $request]);
         $validated = $request->validate([
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
-            'type' => 'required|in:article,announcement,draft',
-            'isAnnouncement' => 'nullable',
+            'type' => 'required|string|in:article,announcement',
+            'isDraft' => 'required|boolean',
+            'draftId' => 'nullable',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',
@@ -105,8 +107,7 @@ class ArticleController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:100',
             'attachmentLink' => 'nullable|string|max:255',
-            'attachmentName' => 'nullable|string|max:255',
-            'draftId' => 'nullable'
+            'attachmentName' => 'nullable|string|max:255'
         ]);
         $validated['status'] = 'published';
         Log::info("准备发布文章：", ['article' => $validated]);
@@ -121,8 +122,8 @@ class ArticleController extends Controller
             'authorId' => 'required|exists:quanthub_users,id',
             'title' => 'required|string|max:255',
             'subTitle' => 'nullable|string|max:255',
-            'type' => 'required|in:article,announcement,draft',
-            'isAnnouncement' => 'nullable|boolean',
+            'type' => 'required|in:article,announcement',
+            'isDraft' => 'required|boolean',
             'contentHtml' => 'required|string',
             'contentText' => 'required|string',
             'coverImageLink' => 'nullable|string|max:255',

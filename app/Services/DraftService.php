@@ -32,7 +32,7 @@ class DraftService
                 && Article::where('draft_reference_id', $data['referenceId'])->exists();
             $hasDraftId = array_key_exists('id', $data) && !empty($data['id']) && Article::where([
                     ['id', '=', $data['id']],
-                    ['type', '=', 'draft']
+                    ['is_draft', '=', true]
                 ])->exists();
             $savedDraft = null;
             if (!$hasDraftId && !$hasReference) {
@@ -68,7 +68,10 @@ class DraftService
     public function getDraftByArticleId($articleId): array {
         try {
             $article = Article::with(['author', 'likes', 'tags'])->findOrFail($articleId);
-            $draft = Article::with(['author', 'category', 'tags'])->where('draft_reference_id', $article->id)->first();
+            $draft = Article::with(['author', 'category', 'tags'])->where([
+                ['draft_reference_id', '=', $article->id],
+                ['is_draft', '=', true]
+            ])->first();
 
             $response = null;
             if (!empty($draft)) {
@@ -83,10 +86,14 @@ class DraftService
     }
 
     public function deleteDraft($draftId): void {
-        Article::find($draftId)->delete();
+        $draft = Article::find($draftId);
 
-        // delete from elasticsearch
-        $this->elasticsearchService->deleteArticleById('quanthub-articles', $draftId);
+        if ($draft) {
+            $index = $draft->type === 'article' ? 'quanthub-articles' : 'quanthub-announcements';
+            Article::destroy($draftId);
+            // delete from elasticsearch
+            $this->elasticsearchService->deleteArticleById($index, $draftId);
+        }
     }
 
     public function constructDraftResponse($draft): array {
@@ -112,8 +119,8 @@ class DraftService
             'contentHtml' => $draft->content,
             'coverImageLink' => $draft->cover_image_link,
             'rate' => 0,
-            'type' => 'draft',
-            'isAnnouncement' => $draft->is_announcement,
+            'type' => $draft->type,
+            'isDraft' => true,
             'comments' => [],
             'likes' => 0,
             'isLiking' => false,
@@ -144,8 +151,8 @@ class DraftService
         // delete existing draft
         if (isset($data['referenceId'])) {
             Article::where([
-                ['draft_reference_id', $data['referenceId']],
-                ['type', '=', 'draft']
+                ['draft_reference_id', '=', $data['referenceId']],
+                ['is_draft', '=', true]
             ])->delete();
         }
 
@@ -165,8 +172,8 @@ class DraftService
             'category_id' => $category->id,
             'rate' => 0,
             'status' => 'draft',
-            'type' => 'draft',
-            'is_announcement' => $data['isAnnouncement'],
+            'type' => $data['type'],
+            'is_draft' => true,
             'cover_image_link' => $data['coverImageLink'] ?? null,
             'attachment_link' => $data['attachmentLink'] ?? null,
             'attachment_name' => $data['attachmentName'] ?? null,
@@ -183,8 +190,9 @@ class DraftService
         }
 
         // add to elasticsearch
+        $indexName = $article->type === 'article' ? 'quanthub-articles' : 'quanthub-announcements';
         $this->elasticsearchService->createArticleDoc([
-            'index' => 'quanthub-articles',
+            'index' => $indexName,
             'id' => $article->id,
             'author' => [
                 'id' => $author->id,
@@ -196,6 +204,7 @@ class DraftService
             'sub_title' => $article->sub_title,
             'content' => $data['contentText'],
             'type' => $article->type,
+            'is_draft' => true,
             'category' => $category->name,
             'tags' => $tagNameList,
             'status' => $data['status'] ?? 'published',
@@ -234,7 +243,8 @@ class DraftService
             'sub_title' => $data['subTitle'] ?? null,
             'content' => $data['contentHtml'],
             'category_id' => $category->id,
-            'is_announcement' => $data['isAnnouncement'],
+            'type' => $data['type'],
+            'is_draft' => true,
             'cover_image_link' => $data['coverImageLink'] ?? null,
             'attachment_link' => $data['attachmentLink'] ?? null,
             'attachment_name' => $data['attachmentName'] ?? null,
@@ -244,6 +254,37 @@ class DraftService
         // update tags
         $this->tagService->disconnectTagsFromArticle($article->id);
         $savedTags = $this->tagService->connectTagsToArticle($data['tags'], $article->id, $article->author->id);
+        $tagNameList = [];
+        foreach ($savedTags as $tag) {
+            $tagNameList[] = $tag->name;
+        }
+
+        // update Elasticsearch
+        $indexName = $article->type === 'article' ? 'quanthub-articles' : 'quanthub-announcements';
+        $this->elasticsearchService->updateArticleDoc([
+            'index' => $indexName,
+            'id' => $article->id,
+            'author' => [
+                'id' => $article->author->id,
+                'username' => $article->author->username,
+                'email' => $article->author->email,
+                'role' => $article->author->role
+            ],
+            'title' => $article->title,
+            'sub_title' => $article->sub_title,
+            'content' => $data['contentText'],
+            'type' => $article->type,
+            'is_draft' => true,
+            'category' => $category->name,
+            'tags' => $tagNameList,
+            'status' => 'draft',
+            'publish_date' => $article->publish_date,
+            'cover_image_link' => $data['coverImageLink'] ?? null,
+            'attachment_link' => $data['attachmentLink'] ?? null,
+            'attachment_name' => $data['attachmentName'] ?? null,
+            'created_by' => $article->author->id,
+            'updated_by' => $article->author->id
+        ]);
 
         // commit changes
         DB::commit();
