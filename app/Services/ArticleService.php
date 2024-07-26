@@ -48,6 +48,7 @@ class ArticleService
                 $currentArticle = $this->getArticleOverviewData($articleId, $description);
                 $articleOverview[] = $currentArticle;
             }
+            Log::info("查询结果：", ['result' => $articleOverview]);
 
             return $articleOverview;
         } catch (Exception $exception) {

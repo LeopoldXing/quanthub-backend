@@ -7,6 +7,8 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class ArticleController extends Controller
 {
@@ -40,9 +42,34 @@ class ArticleController extends Controller
      *
      * @param Request $request
      * @return JsonResponse
+     * @throws ValidationException
      */
     public function searchArticles(Request $request): JsonResponse {
-        $validated = $request->validate([
+        Log::info("接受的搜索条件：", ['request' => $request]);
+        // Extract and parse categoryList from the query string
+        $categoryList = $request->input('categoryList');
+        if (!is_array($categoryList)) {
+            $categoryList = explode(',', $categoryList);
+        }
+
+        // Extract and parse tagList from the query string
+        $tagList = $request->input('tagList');
+        if (!is_array($tagList)) {
+            $tagList = explode(',', $tagList);
+        }
+
+        // Prepare data for validation
+        $data = [
+            'keyword' => $request->input('keyword'),
+            'categoryList' => $categoryList,
+            'tagList' => $tagList,
+            'type' => $request->input('type'),
+            'isDraft' => $request->input('isDraft'),
+            'sortStrategy' => $request->input('sortStrategy'),
+            'sortDirection' => $request->input('sortDirection'),
+        ];
+
+        $validated = Validator::make($data, [
             'keyword' => 'nullable|string|max:255',
             'categoryList' => 'nullable|array',
             'categoryList.*' => 'string|max:100',
@@ -52,7 +79,7 @@ class ArticleController extends Controller
             'tagList.*' => 'string|max:100',
             'sortStrategy' => 'nullable|in:publish_date,update_date,recommended',
             'sortDirection' => 'nullable|in:desc,asc,none',
-        ]);
+        ])->validate();
 
         $res = $this->articleService->searchArticles($validated);
         $res = $this->cleanArrayData($res);

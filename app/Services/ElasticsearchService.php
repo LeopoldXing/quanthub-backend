@@ -52,21 +52,31 @@ class ElasticsearchService
         }
 
         // Category filter
-        if (!empty($params['categoryList'])) {
-            $query['bool']['filter'][] = [
-                'terms' => [
-                    'category.keyword' => $params['categoryList']
-                ]
-            ];
+        if (!empty($params['categoryList']) && is_array($params['categoryList'])) {
+            $categories = array_filter($params['categoryList'], function ($category) {
+                return !empty($category);
+            });
+            if (!empty($categories)) {
+                $query['bool']['filter'][] = [
+                    'terms' => [
+                        'category' => $categories
+                    ]
+                ];
+            }
         }
 
         // Tag filter
-        if (!empty($params['tagList'])) {
-            $query['bool']['filter'][] = [
-                'terms' => [
-                    'tags.keyword' => $params['tagList']
-                ]
-            ];
+        if (!empty($params['tagList']) && is_array($params['tagList'])) {
+            $tags = array_filter($params['tagList'], function ($tag) {
+                return !empty($tag);
+            });
+            if (!empty($tags)) {
+                $query['bool']['filter'][] = [
+                    'terms' => [
+                        'tags' => $tags
+                    ]
+                ];
+            }
         }
 
         // Content type filter
@@ -116,11 +126,10 @@ class ElasticsearchService
             $results[] = [
                 'id' => $hit['_id'],
                 'score' => $hit['_score'],
-                'source' => $hit['_source'] // This contains the actual data of the document
+                'source' => $hit['_source']
             ];
         }
 
-        Log::info("查询结果：", ['result' => $results]);
         return $results;
     }
 
