@@ -268,13 +268,6 @@ class ArticleService
         $article = Article::with(['author', 'likes', 'tags'])->findOrFail($id);
         $author = $article->author;
         $likes = $article->likes ? $article->likes : [];
-        $isLiking = false;
-        foreach ($likes as $like) {
-            if ($like->author_id === $author->id) {
-                $isLiking = true;
-                break;
-            }
-        }
         $tags = $article->tags ? $article->tags : [];
         $category = null;
         if ($article->category) {
@@ -304,6 +297,7 @@ class ArticleService
             'comments' => $commentData,
             'likes' => $likes->count(),
             'isLiking' => $this->likesService->isThisArticleLiked($id, $article->author->id),
+            'disLiking' => $this->likesService->isThisArticleDisLiked($id, $article->author->id),
             'views' => 1,
             'author' => [
                 'id' => $article->author->id,
@@ -318,8 +312,6 @@ class ArticleService
             'publishTillToday' => '3 days ago',
             'updateTillToday' => 'yesterday'
         ];
-
-        Log::info("找到的文章数据：", ['articleData' => $response]);
 
         return $response;
     }

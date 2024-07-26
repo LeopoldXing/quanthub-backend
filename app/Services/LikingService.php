@@ -6,15 +6,40 @@ use App\Models\Like;
 
 class LikingService
 {
-    public function countArticleLikes($articleId) {
-        $count = Like::where('article_id', $articleId)->count();
-        return $count;
+    /**
+     * @param $articleId
+     * @return mixed
+     */
+    public function countArticleLikes($articleId): mixed {
+        return Like::where('article_id', $articleId)->count();
     }
 
-    public function isThisArticleLiked($articleId, $userId) {
-        return Like::where([
+    /**
+     * @param $articleId
+     * @param $userId
+     * @return bool
+     */
+    public function isThisArticleLiked($articleId, $userId): bool {
+        $like = Like::where([
             ['article_id', '=', $articleId],
             ['user_id', '=', $userId],
-        ])->exists();
+        ])->first();
+
+        return ($like && $like->type === 1);
     }
+
+    /**
+     * @param $articleId
+     * @param $userId
+     * @return bool
+     */
+    public function isThisArticleDisLiked($articleId, $userId): bool {
+        $like = Like::where([
+            ['article_id', '=', $articleId],
+            ['user_id', '=', $userId],
+        ])->first();
+
+        return ($like && $like->type === 0);
+    }
+
 }
