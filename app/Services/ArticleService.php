@@ -16,17 +16,20 @@ class ArticleService
     protected TagService $tagService;
     protected CommentService $commentService;
     protected LikingService $likesService;
+    protected RedisService $redisService;
 
     public function __construct(ElasticsearchService $elasticsearch,
                                 CategoryService      $categoryService,
                                 TagService           $tagService,
                                 CommentService       $commentService,
-                                LikingService        $likesService) {
+                                LikingService        $likesService,
+                                RedisService         $redisService) {
         $this->elasticsearch = $elasticsearch;
         $this->categoryService = $categoryService;
         $this->tagService = $tagService;
         $this->commentService = $commentService;
         $this->likesService = $likesService;
+        $this->redisService = $redisService;
     }
 
     /**
@@ -138,6 +141,9 @@ class ArticleService
 
             /*  remove unused categories  */
             $this->categoryService->removeUnusedCategories();
+
+            /*  add viewing data into redis using atomic operation  */
+            $this->redisService->increaseViews($article->id);
 
             DB::commit();
 
@@ -281,6 +287,10 @@ class ArticleService
 
         $commentData = $this->commentService->getCommentsByArticleId($article->id)['data'];
 
+        /*  add viewing data into redis using atomic operation  */
+        $this->redisService->increaseViews($article->id);
+        $views = $this->redisService->getViews($article->id);
+
         $response = [
             'id' => $id,
             'title' => $article->title,
@@ -298,7 +308,7 @@ class ArticleService
             'likes' => $likes->count(),
             'isLiking' => $this->likesService->isThisArticleLiked($id, $article->author->id),
             'disLiking' => $this->likesService->isThisArticleDisLiked($id, $article->author->id),
-            'views' => 1,
+            'views' => $views,
             'author' => [
                 'id' => $article->author->id,
                 'username' => $article->author->username,
@@ -332,6 +342,8 @@ class ArticleService
 
         $commentData = $this->commentService->getCommentsByArticleId($article->id)['data'];
 
+        $views = $this->redisService->getViews($article->id);
+
         $response = [
             'id' => $articleId,
             'title' => $article->title,
@@ -347,7 +359,7 @@ class ArticleService
             'isDraft' => $article->is_draft,
             'commentsCount' => count($commentData),
             'likes' => $likes->count(),
-            'views' => 1,
+            'views' => $views,
             'author' => [
                 'id' => $article->author->id,
                 'username' => $article->author->username,

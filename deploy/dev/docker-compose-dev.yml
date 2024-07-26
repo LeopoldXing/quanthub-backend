@@ -4,9 +4,9 @@ services:
     image: mysql:8.2.0
     networks:
       - quanthub-dev-network
-    volumes:
-      - quanthub-mysql-data:/var/lib/mysql
-      - quanthub-mysql-conf:/etc/mysql
+      # volumes:
+      # - quanthub-mysql-data:/var/lib/mysql
+      # - quanthub-mysql-conf:/etc/mysql
     environment:
       MYSQL_ROOT_PASSWORD: 1234
     ports:
@@ -66,15 +66,35 @@ services:
     networks:
       - quanthub-dev-network
 
+  redis:
+    container_name: redis-quanthub-dev
+    image: redis:7.2.5
+    ports:
+      - "6379:6379"
+    # volumes:
+      # - ./redis/data:/root/redis
+      # - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      - REDIS_PASSWORD=1234
+      - REDIS_PORT=6379
+      - REDIS_DATABASES=16
+    networks:
+      - quanthub-dev-network
+    healthcheck:
+      test: [ 'CMD', 'redis-cli', 'ping' ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: redis-server --requirepass 1234
 
 networks:
   quanthub-dev-network:
     driver: bridge
     name: quanthub-dev-network
 
-volumes:
-  quanthub-mysql-data:
-    name: quanthub-mysql-data
-  quanthub-mysql-conf:
-    name: quanthub-mysql-conf
+#volumes:
+#  quanthub-mysql-data:
+#    name: quanthub-mysql-data
+#  quanthub-mysql-conf:
+#    name: quanthub-mysql-conf
 
