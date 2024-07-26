@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Category;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CategoryService
 {
@@ -13,7 +15,7 @@ class CategoryService
      * @param $operator_id
      * @return mixed
      */
-    public function saveCategory($category, $operator_id) {
+    public function saveCategory($category, $operator_id): mixed {
         if (!empty($category)) {
             $res = Category::firstOrCreate(
                 ['name' => $category],
@@ -28,4 +30,12 @@ class CategoryService
 
         return $res;
     }
+
+    public function getCategories(): Collection {
+        return DB::table('categories')
+            ->select('name')
+            ->orderBy(DB::raw('LEFT(name, 1)'))
+            ->get();
+    }
+
 }

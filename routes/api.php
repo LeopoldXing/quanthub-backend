@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DraftController;
 use App\Http\Controllers\LikingController;
@@ -33,3 +34,5 @@ Route::put('/comment/update', [CommentController::class, 'updateComment']);
 
 Route::post('/like', [LikingController::class, 'likeArticle']);
 Route::post('/cancel', [LikingController::class, 'cancelLikes']);
+
+Route::get('/category/all', [CategoryController::class, 'getAllCategories']);
