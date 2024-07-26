@@ -18,6 +18,8 @@ class CategoryController extends Controller
     }
 
     public function getAllCategories(): JsonResponse {
-        return response()->json($this->categoryService->getCategories(), 200);
+        return response()->json($this->categoryService->getCategories()->map(function ($category) {
+            return $category->name;
+        }), 200);
     }
 }

@@ -136,6 +136,9 @@ class ArticleService
                 $this->elasticsearch->deleteArticleById($article->type === 'article' ? 'quanthub-articles' : 'quanthub-announcements', $data['draftId']);
             }
 
+            /*  remove unused categories  */
+            $this->categoryService->removeUnusedCategories();
+
             DB::commit();
 
             // prepare response
@@ -234,6 +237,9 @@ class ArticleService
                 'created_by' => $article->author->id,
                 'updated_by' => $article->author->id
             ]);
+
+            /*  remove unused categories  */
+            $this->categoryService->removeUnusedCategories();
 
             // commit changes
             DB::commit();
@@ -372,10 +378,17 @@ class ArticleService
      * @return void
      */
     public function deleteArticle($id): void {
+        DB::beginTransaction();
+
         $article = Article::find($id);
         if (!empty($article)) {
             Article::destroy($id);
             $this->elasticsearch->deleteArticleById($article->type === 'article' ? 'quanthub-articles' : 'quanthub-announcements', $id);
         }
+
+        /*  remove unused categories  */
+        $this->categoryService->removeUnusedCategories();
+
+        DB::commit();
     }
 }

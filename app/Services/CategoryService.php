@@ -38,4 +38,15 @@ class CategoryService
             ->get();
     }
 
+    /**
+     * delete all unused categories
+     *
+     * @return void
+     */
+    public function removeUnusedCategories(): void {
+        DB::table('categories')->whereNotIn('id', function ($query) {
+            $query->select('category_id')->from('articles');
+        })->delete();
+    }
+
 }
