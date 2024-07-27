@@ -70,13 +70,13 @@ services:
     container_name: redis-quanthub-dev
     image: redis:7.2.5
     ports:
-      - "6379:6379"
-    # volumes:
+      - "16379:16379"
+      # volumes:
       # - ./redis/data:/root/redis
       # - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
     environment:
       - REDIS_PASSWORD=1234
-      - REDIS_PORT=6379
+      - REDIS_PORT=16379
       - REDIS_DATABASES=16
     networks:
       - quanthub-dev-network
@@ -85,7 +85,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    command: redis-server --requirepass 1234
+    command: redis-server --port 16379 --requirepass 1234
+
 
 networks:
   quanthub-dev-network:
