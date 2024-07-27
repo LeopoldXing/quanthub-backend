@@ -13,7 +13,7 @@ Route::post('/my/user', [UserController::class, 'createMyUser']);
 Route::put('/profile', [UserController::class, 'updateProfile']);
 Route::get('/profile', [UserController::class, 'getUserProfile']);
 
-Route::get('/article/search', [ArticleController::class, 'searchArticles']);
+Route::get('/articles/search', [ArticleController::class, 'searchArticles']);
 Route::post('/article/publish', [ArticleController::class, 'createArticle']);
 Route::put('/article/update', [ArticleController::class, 'updateArticle']);
 Route::get('/article/{id}', [ArticleController::class, 'getArticle']);

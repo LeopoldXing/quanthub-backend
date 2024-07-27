@@ -45,27 +45,41 @@ class ArticleController extends Controller
      * @throws ValidationException
      */
     public function searchArticles(Request $request): JsonResponse {
-        // Extract and parse categoryList from the query string
-        $categoryList = $request->input('categoryList');
-        if (!is_array($categoryList)) {
-            $categoryList = explode(',', $categoryList);
-        }
-
-        // Extract and parse tagList from the query string
-        $tagList = $request->input('tagList');
-        if (!is_array($tagList)) {
-            $tagList = explode(',', $tagList);
-        }
+//        // Extract and parse categoryList from the query string
+//        $categoryList = $request->input('categoryList');
+//        if (!is_array($categoryList)) {
+//            $categoryList = explode(',', $categoryList);
+//        }
+//
+//        // Extract and parse tagList from the query string
+//        $tagList = $request->input('tagList');
+//        if (!is_array($tagList)) {
+//            $tagList = explode(',', $tagList);
+//        }
 
         // Prepare data for validation
+//        $data = [
+//            'keyword' => $request->input('keyword'),
+//            'categoryList' => $categoryList,
+//            'tagList' => $tagList,
+//            'type' => $request->input('type'),
+//            'isDraft' => $request->input('isDraft'),
+//            'sortStrategy' => $request->input('sortStrategy'),
+//            'sortDirection' => $request->input('sortDirection'),
+//            'current' => $request->input('current'),
+//            'size' => $request->input('size'),
+//        ];
+
         $data = [
             'keyword' => $request->input('keyword'),
-            'categoryList' => $categoryList,
-            'tagList' => $tagList,
+            'categoryList' => $request->input('categoryList'),
+            'tagList' => $request->input('tagList'),
             'type' => $request->input('type'),
             'isDraft' => $request->input('isDraft'),
             'sortStrategy' => $request->input('sortStrategy'),
             'sortDirection' => $request->input('sortDirection'),
+            'current' => $request->input('current'),
+            'size' => $request->input('size'),
         ];
 
         $validated = Validator::make($data, [
@@ -78,10 +92,12 @@ class ArticleController extends Controller
             'tagList.*' => 'string|max:100',
             'sortStrategy' => 'nullable|in:publish_date,update_date,recommended',
             'sortDirection' => 'nullable|in:desc,asc,none',
+            'current' => 'required|int',
+            'size' => 'nullable|int',
         ])->validate();
 
         $res = $this->articleService->searchArticles($validated);
-        $res = $this->cleanArrayData($res);
+        $res['data'] = $this->cleanArrayData($res['data']);
         return response()->json($res, 200);
     }
 

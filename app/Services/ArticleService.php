@@ -16,14 +16,14 @@ class ArticleService
     protected TagService $tagService;
     protected CommentService $commentService;
     protected LikingService $likesService;
-    protected RedisService $redisService;
+    protected ViewService $redisService;
 
     public function __construct(ElasticsearchService $elasticsearch,
                                 CategoryService      $categoryService,
                                 TagService           $tagService,
                                 CommentService       $commentService,
                                 LikingService        $likesService,
-                                RedisService         $redisService) {
+                                ViewService          $redisService) {
         $this->elasticsearch = $elasticsearch;
         $this->categoryService = $categoryService;
         $this->tagService = $tagService;
@@ -42,7 +42,7 @@ class ArticleService
         try {
             $res = $this->elasticsearch->conditionalSearch($condition);
             $articleOverview = [];
-            foreach ($res as $item) {
+            foreach ($res['data'] as $item) {
                 $articleId = $item['id'];
                 $description = $item['source']['content'];
                 if (strlen($description) > 350) {
@@ -52,7 +52,13 @@ class ArticleService
                 $articleOverview[] = $currentArticle;
             }
 
-            return $articleOverview;
+            Log::info("search result: ", ['result' => $res['data']]);
+
+            return [
+                'data' => $articleOverview,
+                'current' => $res['current'],
+                'total' => $res['total']
+            ];
         } catch (Exception $exception) {
             Log::error($exception->getMessage());
             Log::error('Failed to search', ['error' => $exception->getMessage()]);

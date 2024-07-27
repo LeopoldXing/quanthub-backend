@@ -108,16 +108,27 @@ class ElasticsearchService
             }
         }
 
+        // Pagination calculations
+        $currentPage = isset($params['current']) ? (int)$params['current'] : 1;
+        $pageSize = isset($params['size']) ? (int)$params['size'] : 10;
+        $from = ($currentPage - 1) * $pageSize;
+
         // Build the final query array
         $searchParams = [
             'index' => implode(',', $indices),
             'body' => [
                 'query' => $query,
+                'from' => $from,
+                'size' => $pageSize,
                 'sort' => $this->buildSortParams($params)
             ]
         ];
 
         $response = $this->client->search($searchParams);
+
+        // Calculate total pages
+        $totalHits = $response['hits']['total']['value'];
+        $totalPages = ceil($totalHits / $pageSize);
 
         // Process the results
         $results = [];
@@ -129,7 +140,13 @@ class ElasticsearchService
             ];
         }
 
-        return $results;
+        $result = [
+            'data' => $results,
+            'current' => $currentPage,
+            'total' => $totalPages,
+        ];
+
+        return $result;
     }
 
 

@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Redis;
 
-class RedisService
+class ViewService
 {
     /**
      * @param $articleId
