@@ -2,62 +2,72 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\QuanthubUser;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
-    public function createMyUser(Request $request) {
-        // 验证请求数据
+    public function createMyUser(Request $request): JsonResponse {
         $validated = $request->validate([
             'auth0Id' => 'required|string|unique:quanthub_users,auth0_id',
             'email' => 'required|email|unique:quanthub_users,email',
         ]);
 
-        // 检查用户是否存在
+        // check if the user exists
         $user = QuanthubUser::where('auth0_id', $validated['auth0Id'])
             ->orWhere('email', $validated['email'])
             ->first();
 
-        // 如果用户存在，返回已有用户信息
+        // if the user exists, return their info
         if ($user) {
             return response()->json($user, 200);
         }
 
-        // 如果用户不存在，创建新用户并保存到数据库
+        // if the user doesn't exist, create user in the database
         $user = QuanthubUser::create([
             'auth0_id' => $validated['auth0Id'],
-            'username' => $validated['email'],  // 设置username为email
-            'password' => bcrypt('default_password'),  // 需要根据实际情况进行处理
+            'username' => $validated['email'],
+            'password' => bcrypt('default_password'),
             'email' => $validated['email'],
-            'role' => 'Registered User',  // 设置role字段为"Registered User"
+            'role' => 'Registered User',
         ]);
 
-        return response()->json($user, 201);  // 将用户对象转换为JSON并返回
+        return response()->json($user, 201);
     }
 
-    public function updateProfile(Request $request) {
+    public function updateProfile(Request $request): JsonResponse {
         $validated = $request->validate([
-            'user.id' => 'required|exists:quanthub_users,id',
-            'user.email' => 'required|email',
+            'auth0Id' => 'required|exists:quanthub_users,auth0_id',
+            'email' => 'required|email',
+            'username' => 'nullable|string',
+            'password' => 'nullable|string',
+            'description' => 'nullable|string',
+            'phoneNumber' => 'nullable|string',
+            'role' => 'required|string'
         ]);
 
-        $user = QuanthubUser::findOrFail($validated['user']['id']);
+        $user = QuanthubUser::where('auth0_id', $validated['auth0Id'])->first();
         $user->update([
-            'email' => $validated['user']['email'],
+            'email' => $validated['email'],
+            'username' => $validated['username'],
+            'password' => bcrypt($validated['password']),
+            'description' => $validated['description'],
+            'phone_number' => $validated['phoneNumber'],
+            'role' => $validated['role']
         ]);
 
         return response()->json($user, 200);
     }
 
-    public function getUserProfile(Request $request) {
+    public function getUserProfile(Request $request): JsonResponse {
         $validated = $request->validate([
-            'id' => 'nullable|exists:quanthub_users,id',
+            'id' => 'nullable',
             'auth0Id' => 'nullable|string',
             'email' => 'nullable|email',
         ]);
 
-        // 查找用户信息
         $user = null;
         if (!empty($validated['auth0Id'])) {
             $user = QuanthubUser::where('auth0_id', $validated['auth0Id'])->first();
@@ -70,7 +80,17 @@ class UserController extends Controller
         if ($user) {
             return response()->json($user, 200);
         } else {
-            return response()->json(null, 204); // 无内容
+            return response()->json(null, 204);
         }
+    }
+
+    public function updateAvatarLink(Request $request): void {
+        $validated = $request->validate([
+            'id' => 'nullable|string',
+            'auth0Id' => 'required|string|unique:quanthub_users,auth0_id',
+            'avatarLink' => 'nullable|string'
+        ]);
+
+        DB::table('quanthub_users')->where('auth0_id', $validated['auth0Id'])->update(['avatar_link' => $validated['avatarLink']]);
     }
 }

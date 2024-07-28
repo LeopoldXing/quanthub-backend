@@ -15,6 +15,7 @@ class CreateQuanthubUsersTable extends Migration
             $table->string('email', 100)->nullable();
             $table->string('phone_number', 100)->nullable();
             $table->string('role', 100)->nullable();
+            $table->string('description', 255)->nullable();
             $table->string('avatar_link', 255)->nullable();
             $table->string('created_by', 100)->nullable();
             $table->string('updated_by', 100)->nullable();

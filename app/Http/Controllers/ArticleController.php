@@ -24,7 +24,7 @@ class ArticleController extends Controller
      * @param mixed $data
      * @return mixed
      */
-    function cleanArrayData($data): mixed {
+    function cleanArrayData(mixed $data): mixed {
         if (is_array($data)) {
             foreach ($data as $key => $value) {
                 $data[$key] = $this->cleanArrayData($value);

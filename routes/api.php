@@ -12,6 +12,7 @@ use App\Http\Controllers\ArticleController;
 Route::post('/my/user', [UserController::class, 'createMyUser']);
 Route::put('/profile', [UserController::class, 'updateProfile']);
 Route::get('/profile', [UserController::class, 'getUserProfile']);
+Route::put('/avatar', [UserController::class, 'updateAvatarLink']);
 
 Route::get('/articles/search', [ArticleController::class, 'searchArticles']);
 Route::post('/article/publish', [ArticleController::class, 'createArticle']);
