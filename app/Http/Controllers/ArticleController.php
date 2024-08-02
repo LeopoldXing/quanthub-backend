@@ -70,18 +70,6 @@ class ArticleController extends Controller
             'size' => $request->input('size'),
         ];
 
-//        $data = [
-//            'keyword' => $request->input('keyword'),
-//            'categoryList' => $request->input('categoryList'),
-//            'tagList' => $request->input('tagList'),
-//            'type' => $request->input('type'),
-//            'isDraft' => $request->input('isDraft'),
-//            'sortStrategy' => $request->input('sortStrategy'),
-//            'sortDirection' => $request->input('sortDirection'),
-//            'current' => $request->input('current'),
-//            'size' => $request->input('size'),
-//        ];
-
         $validated = Validator::make($data, [
             'keyword' => 'nullable|string|max:255',
             'categoryList' => 'nullable|array',

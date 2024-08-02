@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\QuanthubUser;
+use DateTime;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -188,6 +189,41 @@ class ArticleService
         }
     }
 
+    /**
+     * @param $timestamp
+     * @return mixed|string|null
+     */
+    private function timeAgo($timestamp): mixed {
+        $now = new DateTime();
+        $ago = DateTime::createFromFormat('U', $timestamp);
+        $diff = $now->diff($ago);
+
+        $diff->w = floor($diff->d / 7);
+        $diff->d -= $diff->w * 7;
+
+        $string = [
+            'y' => 'year',
+            'm' => 'month',
+            'w' => 'week',
+            'd' => 'day',
+            'h' => 'hour',
+            'i' => 'minute',
+            's' => 'second',
+        ];
+
+        foreach ($string as $k => &$v) {
+            if ($diff->$k) {
+                $v = $diff->$k . ' ' . $v . ($diff->$k > 1 ? 's' : '') . ' ago';
+            } else {
+                unset($string[$k]);
+            }
+        }
+
+        if (!$string) return 'a few seconds ago';
+        $string = array_slice($string, 0, 1);
+        return $string ? array_shift($string) : 'just now';
+    }
+
     public function updateArticle($articleData): ?array {
         DB::beginTransaction();
 
@@ -325,8 +361,8 @@ class ArticleService
             'attachmentLink' => $article->attachment_link,
             'publishTimestamp' => (int)$article->created_at->timestamp,
             'updateTimestamp' => (int)$article->updated_at->timestamp,
-            'publishTillToday' => '3 days ago',
-            'updateTillToday' => 'yesterday'
+            'publishTillToday' => $this->timeAgo($article->created_at->timestamp),
+            'updateTillToday' => $this->timeAgo($article->updated_at->timestamp),
         ];
 
         return $response;
@@ -374,8 +410,8 @@ class ArticleService
             ],
             'publishTimestamp' => (int)$article->created_at->timestamp,
             'updateTimestamp' => (int)$article->updated_at->timestamp,
-            'publishTillToday' => '3 days ago',
-            'updateTillToday' => 'yesterday'
+            'publishTillToday' => $this->timeAgo($article->created_at->timestamp),
+            'updateTillToday' => $this->timeAgo($article->updated_at->timestamp),
         ];
 
         return $response;
