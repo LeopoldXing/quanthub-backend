@@ -1,4 +1,4 @@
-FROM php:8.1-fpm
+FROM php:8.4-rc-fpm
 
 RUN apt-get update && apt-get install -y \
     libpng-dev \
@@ -27,6 +27,4 @@ RUN composer install --ignore-platform-reqs --no-interaction --optimize-autoload
 
 RUN php -v
 
-EXPOSE 9000
-
-CMD ["php-fpm"]
+EXPOSE 8000
