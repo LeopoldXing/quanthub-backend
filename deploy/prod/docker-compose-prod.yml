@@ -35,6 +35,8 @@ services:
         hard: -1
     volumes:
       - ./elasticsearch/data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
     networks:
       - quanthub-prod-network
     healthcheck:
@@ -88,7 +90,7 @@ services:
 
   quanthub-backend:
     container_name: quanthub-backend
-    image: quanthub-backend
+    image: leopoldhsing2/quanthub-backend
     ports:
       - "12345:8000"
     environment:
@@ -111,10 +113,14 @@ services:
       - APP_DEBUG=true
       - APP_TIMEZONE=UTC
       - APP_URL=http://localhost
+    depends_on:
+      es01:
+        condition: service_healthy
     command: >
-      sh -c "php artisan setup:elasticsearch &&
-             php artisan migrate &&
-             php artisan serve --host=0.0.0.0 --port=8000"
+      /bin/sh -c "
+      php artisan setup:elasticsearch &&
+      php artisan serve --host=0.0.0.0 --port=8000
+      "
     networks:
       - quanthub-prod-network
   quanthub-frontend:
