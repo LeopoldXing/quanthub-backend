@@ -1,4 +1,4 @@
-FROM php:8.4-rc-fpm
+FROM php:8.1-fpm
 
 RUN apt-get update && apt-get install -y \
     libpng-dev \

@@ -111,6 +111,9 @@ services:
       - APP_DEBUG=true
       - APP_TIMEZONE=UTC
       - APP_URL=http://localhost
+    depends_on:
+      es01:
+        condition: service_healthy
     command: >
       sh -c "php artisan setup:elasticsearch &&
              php artisan migrate &&
