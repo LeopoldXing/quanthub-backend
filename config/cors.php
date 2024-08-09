@@ -20,7 +20,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => ['http://quanthub-backend:12345', 'http://quanthub-backend:8000', 'http://quanthub-frontend', 'http://localhost:5173', 'https://localhost:5173', 'https://quanthub.discobroccoli.com', 'http://quanthub.discobroccoli.com', 'https://quanthub.leopoldhsing.cc', 'http://quanthub.leopoldhsing.cc'],
 
     'allowed_origins_patterns' => [],
 
