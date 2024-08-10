@@ -107,7 +107,7 @@ services:
       - REDIS_CLIENT=predis
       - REDIS_HOST=redis-quanthub-prod
       - REDIS_PASSWORD=1234
-      - REDIS_PORT=16379
+      - REDIS_PORT=6379
       - REDIS_DB=0
       - REDIS_CACHE_DB=1
       - APP_NAME=QuantHub
@@ -131,7 +131,7 @@ services:
       - quanthub-prod-network
   quanthub-frontend:
     container_name: quanthub-frontend
-    image: quanthub-frontend
+    image: leopoldhsing2/quanthub-frontend
     ports:
       - "5173:5173"
     environment:
