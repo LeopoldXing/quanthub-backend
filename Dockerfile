@@ -26,6 +26,4 @@ RUN chown -R www-data:www-data /app
 
 RUN composer clear-cache
 
-EXPOSE 8000
-
-CMD ["php-fpm"]
+EXPOSE 9000
