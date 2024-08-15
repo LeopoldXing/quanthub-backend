@@ -240,7 +240,7 @@
         - quanthub-frontend
         - quanthub-backend
       networks:
-        - rrc-default-network
+        - quanthub-prod-network
   
   networks:
     quanthub-prod-network:
